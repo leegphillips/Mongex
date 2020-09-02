@@ -10,6 +10,9 @@ import java.util.Properties;
 public class PropertiesSingleton {
     public static final String BLOCK_SIZE_KEY = "dataloader.mongo.blocksize";
 
+    public static final String PROCESSED_DIR = "dataloader.data.processed";
+    public static final String SOURCE_DIR = "dataloader.data.ingest";
+
     private static Logger log = LoggerFactory.getLogger(PropertiesSingleton.class);
 
     private static Properties INSTANCE;

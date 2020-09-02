@@ -18,11 +18,9 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static org.github.leegphillips.mongex.DocumentFactory.TIMESTAMP_FIELD;
-import static org.github.leegphillips.mongex.PropertiesSingleton.BLOCK_SIZE_KEY;
+import static org.github.leegphillips.mongex.PropertiesSingleton.*;
 
 public class DataLoader {
-    private static final Path PROCESSED_DIR = Paths.get("C:\\Forex\\processed-data");
-
     private static Logger log = LoggerFactory.getLogger(DataLoader.class);
 
     private final Properties properties;
@@ -46,9 +44,9 @@ public class DataLoader {
     }
 
     public void execute() throws IOException {
-        int blockSize = Integer.valueOf((String) properties.get(BLOCK_SIZE_KEY));
+        int blockSize = Integer.valueOf(properties.getProperty(BLOCK_SIZE_KEY));
 
-        for (File file : new File("C:\\Forex\\data").listFiles()) {
+        for (File file : new File(properties.getProperty(SOURCE_DIR)).listFiles()) {
             File csvFile = extractor.extractCSV(file);
             MongoCollection<Document> tickCollection = db.getCollection(getPair(csvFile) + "_TICKS");
             if (tickCollection.listIndexes().first() == null) {
@@ -82,7 +80,7 @@ public class DataLoader {
             }
 
             csvFile.delete();
-            Files.move(file.toPath(), Paths.get(PROCESSED_DIR.toString(), file.getName()));
+            Files.move(file.toPath(), Paths.get(properties.getProperty(PROCESSED_DIR), file.getName()));
         }
     }
 
