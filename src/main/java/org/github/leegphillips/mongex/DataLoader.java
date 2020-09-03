@@ -12,9 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 import static org.github.leegphillips.mongex.DocumentFactory.TIMESTAMP_FIELD;
 import static org.github.leegphillips.mongex.PropertiesSingleton.*;
@@ -43,7 +41,18 @@ public class DataLoader {
     }
 
     public void execute() throws IOException {
-        for (File file : new File(properties.getProperty(SOURCE_DIR)).listFiles()) {
+        File[] files = new File(properties.getProperty(SOURCE_DIR)).listFiles();
+        Arrays.sort(files, new Comparator<File>() {
+            @Override
+            public int compare(File o1, File o2) {
+                return o1.getName().compareTo(o2.getName());
+            }
+        });
+
+        log.info("Loading " + files.length + " files");
+        long start = System.currentTimeMillis();
+
+        for (File file : files) {
             File csvFile = extractor.extractCSV(file);
             MongoCollection<Document> tickCollection = db.getCollection(getPair(csvFile) + "_TICKS");
             if (tickCollection.listIndexes().first() == null) {
@@ -74,6 +83,7 @@ public class DataLoader {
                 Files.move(file.toPath(), Paths.get(properties.getProperty(PROCESSED_DIR), file.getName()));
             }
         }
+        log.info(files.length + " loaded in " + (System.currentTimeMillis() - start) + "ms");
     }
 
     private String getPair(File csvFile) {
