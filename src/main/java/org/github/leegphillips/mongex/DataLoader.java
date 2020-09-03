@@ -51,8 +51,10 @@ public class DataLoader {
 
         log.info("Loading " + files.length + " files");
         long start = System.currentTimeMillis();
+        int processedCount = 0;
 
         for (File file : files) {
+            log.info((files.length - processedCount) + " files remaining");
             File csvFile = extractor.extractCSV(file);
             MongoCollection<Document> tickCollection = db.getCollection(getPair(csvFile) + "_TICKS");
             if (tickCollection.listIndexes().first() == null) {
@@ -82,6 +84,7 @@ public class DataLoader {
             if (Boolean.valueOf(properties.getProperty(MOVE_FILES))) {
                 Files.move(file.toPath(), Paths.get(properties.getProperty(PROCESSED_DIR), file.getName()));
             }
+            processedCount++;
         }
         log.info(files.length + " loaded in " + (System.currentTimeMillis() - start) + "ms");
     }
