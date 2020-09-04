@@ -32,7 +32,7 @@ public class DataLoader {
         this.df = df;
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
         Properties properties = PropertiesSingleton.getInstance();
         MongoDatabase db = DatabaseFactory.create(properties);
         ZipExtractor extractor = new ZipExtractor();
@@ -40,7 +40,7 @@ public class DataLoader {
         new DataLoader(properties, db, extractor, df).execute();
     }
 
-    public void execute() throws IOException {
+    public void execute() throws IOException, InterruptedException {
         File[] files = new File(properties.getProperty(SOURCE_DIR)).listFiles();
         Arrays.sort(files, new Comparator<File>() {
             @Override
@@ -85,6 +85,7 @@ public class DataLoader {
                 Files.move(file.toPath(), Paths.get(properties.getProperty(PROCESSED_DIR), file.getName()));
             }
             processedCount++;
+            Thread.sleep(Long.valueOf(properties.getProperty(PAUSE_INTERVAL)));
         }
         log.info(files.length + " loaded in " + (System.currentTimeMillis() - start) + "ms");
     }

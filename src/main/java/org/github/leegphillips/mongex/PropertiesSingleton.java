@@ -13,6 +13,7 @@ public class PropertiesSingleton {
 
     public static final String MOVE_FILES = "dataloader.behaviour.movefiles";
     public static final String BATCH_SIZE = "dataloader.behaviour.batchsize";
+    public static final String PAUSE_INTERVAL = "dataloader.behaviour.pause";
 
     private static final Logger log = LoggerFactory.getLogger(PropertiesSingleton.class);
 
