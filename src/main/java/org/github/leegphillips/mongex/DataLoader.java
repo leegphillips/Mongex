@@ -85,7 +85,6 @@ public class DataLoader {
                 Files.move(file.toPath(), Paths.get(properties.getProperty(PROCESSED_DIR), file.getName()));
             }
             processedCount++;
-            Thread.sleep(Long.valueOf(properties.getProperty(PAUSE_INTERVAL)));
         }
         log.info(files.length + " loaded in " + (System.currentTimeMillis() - start) + "ms");
     }
