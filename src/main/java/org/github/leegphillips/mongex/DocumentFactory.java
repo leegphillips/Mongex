@@ -2,7 +2,6 @@ package org.github.leegphillips.mongex;
 
 import org.apache.commons.csv.CSVRecord;
 import org.bson.Document;
-import org.bson.types.Decimal128;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,15 +10,15 @@ public class DocumentFactory {
     public static final String BID_FIELD = "bid";
     public static final String ASK_FIELD = "ask";
 
-    private static Logger log = LoggerFactory.getLogger(DocumentFactory.class);
+    private static final Logger log = LoggerFactory.getLogger(DocumentFactory.class);
 
     public Document create(CSVRecord record) {
         try {
+            TickFacade tick = new TickFacade(record);
             Document doc = new Document();
-            String timestamp = record.get(0).replaceAll("\\s", "");
-            doc.append(TIMESTAMP_FIELD, Long.valueOf(timestamp));
-            doc.append(BID_FIELD, Decimal128.parse(record.get(2).trim()));
-            doc.append(ASK_FIELD, Decimal128.parse(record.get(1).trim()));
+            doc.append(TIMESTAMP_FIELD, tick.getTimestamp());
+            doc.append(BID_FIELD, tick.getBid());
+            doc.append(ASK_FIELD, tick.getAsk());
             return doc;
         } catch (NumberFormatException e) {
             log.error("Error during conversion of " + record, e);
