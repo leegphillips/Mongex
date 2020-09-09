@@ -8,12 +8,9 @@ import java.io.InputStream;
 import java.util.Properties;
 
 public class PropertiesSingleton {
-    public static final String PROCESSED_DIR = "dataloader.data.processed";
     public static final String SOURCE_DIR = "dataloader.data.ingest";
 
-    public static final String MOVE_FILES = "dataloader.behaviour.movefiles";
     public static final String BATCH_SIZE = "dataloader.behaviour.batchsize";
-    public static final String PAUSE_INTERVAL = "dataloader.behaviour.pause";
 
     private static final Logger log = LoggerFactory.getLogger(PropertiesSingleton.class);
 

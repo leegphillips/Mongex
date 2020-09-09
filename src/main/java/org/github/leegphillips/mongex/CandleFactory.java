@@ -14,7 +14,7 @@ public class CandleFactory {
         long timestamp = first.getTimestamp();
         BigDecimal low = first.getMid();
         BigDecimal high = first.getMid();
-        for (CSVRecord record : records.subList(1, records.size() - 1)) {
+        for (CSVRecord record : records.size() > 1 ? records.subList(1, records.size() - 1) : records) {
             TickFacade tick = new TickFacade(record);
             low = tick.getMid().min(low);
             high = tick.getMid().max(high);
