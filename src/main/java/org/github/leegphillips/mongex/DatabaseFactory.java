@@ -9,7 +9,9 @@ public class DatabaseFactory {
     private final static String DB_NAME = "Mongex";
 
     public static MongoDatabase create(Properties properties) {
-        MongoClient mongoClient = new MongoClient("localhost", 27017);
+        MongoClient mongoClient = new MongoClient(
+                properties.getProperty("dataloader.mongo.host"),
+                Integer.valueOf(properties.getProperty("dataloader.mongo.port")));
         MongoDatabase db = mongoClient.getDatabase(DB_NAME);
         return db;
     }
