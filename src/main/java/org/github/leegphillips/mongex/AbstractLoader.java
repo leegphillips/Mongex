@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Properties;
@@ -32,7 +33,7 @@ public abstract class AbstractLoader {
         this.df = df;
     }
 
-    public void execute() throws IOException {
+    public void execute() throws IOException, ParseException {
         File[] files = new File(properties.getProperty(SOURCE_DIR)).listFiles();
         Arrays.sort(files, new Comparator<File>() {
             @Override
@@ -67,7 +68,7 @@ public abstract class AbstractLoader {
         log.info(files.length + " loaded in " + (System.currentTimeMillis() - start) + "ms");
     }
 
-    protected abstract void processRecords(CSVParser records, MongoCollection<Document> tickCollection) throws IOException;
+    protected abstract void processRecords(CSVParser records, MongoCollection<Document> tickCollection) throws IOException, ParseException;
 
     protected abstract String getNamespace();
 
