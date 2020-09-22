@@ -44,9 +44,7 @@ public abstract class AbstractLoader {
             log.info((files.length - processedCount) + " files remaining");
             File csvFile = extractor.extractCSV(file);
             MongoCollection<Document> tickCollection = getCollection(csvFile);
-            if (tickCollection.listIndexes().first() == null) {
-                tickCollection.createIndex(Indexes.ascending(TIMESTAMP_FIELD));
-            }
+            tickCollection.createIndex(Indexes.ascending(TIMESTAMP_FIELD));
 
             Reader fileReader = new FileReader(csvFile);
             BufferedReader bufferedFileReader = new BufferedReader(fileReader);

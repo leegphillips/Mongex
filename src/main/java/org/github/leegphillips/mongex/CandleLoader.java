@@ -2,6 +2,7 @@ package org.github.leegphillips.mongex;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Indexes;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.bson.Document;
@@ -70,7 +71,11 @@ public class CandleLoader extends AbstractLoader {
 
     @Override
     protected MongoCollection<Document> getCollection(File csvFile) {
-        return db.getCollection(COLLECTION_NAME);
-    }
+        MongoCollection<Document> collection = db.getCollection(COLLECTION_NAME);
 
+        // mongo only creates if one isn't already there - so presumably double calling is fine
+        collection.createIndex(Indexes.ascending("pair"));
+
+        return collection;
+    }
 }
