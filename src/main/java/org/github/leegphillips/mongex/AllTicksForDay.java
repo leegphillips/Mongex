@@ -4,7 +4,6 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
 
@@ -25,9 +24,8 @@ public class AllTicksForDay {
                         lt("timestamp", end)))
                 .sort(new BasicDBObject("timestamp", -1));
 
-        MongoCursor<Document> iterator = cursor.iterator();
-        while(iterator.hasNext()) {
-            System.out.println(iterator.next());
+        for (Document document : cursor) {
+            System.out.println(document);
         }
     }
 }

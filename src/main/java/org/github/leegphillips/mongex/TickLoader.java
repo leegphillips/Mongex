@@ -23,7 +23,7 @@ public class TickLoader extends AbstractLoader {
         super(properties, db, extractor, df);
     }
 
-    public static void main(String[] args) throws IOException, InterruptedException, ParseException {
+    public static void main(String[] args) throws IOException, ParseException {
         Properties properties = PropertiesSingleton.getInstance();
         MongoDatabase db = DatabaseFactory.create(properties);
         ZipExtractor extractor = new ZipExtractor();
@@ -32,7 +32,7 @@ public class TickLoader extends AbstractLoader {
     }
 
     @Override
-    protected void processRecords(CSVParser records, MongoCollection<Document> tickCollection) {
+    protected void processRecords(CSVParser records, MongoCollection<Document> tickCollection, String pair) {
         List<Document> documents = new ArrayList<>();
         int batchSize = Integer.parseInt(properties.getProperty(BATCH_SIZE));
         for (CSVRecord record : records) {

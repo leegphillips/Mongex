@@ -4,7 +4,6 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
 
@@ -21,9 +20,8 @@ public class Explorer {
 
         MongoCollection<Document> audjpy = db.getCollection("AUDJPY");
         FindIterable<Document> cursor = audjpy.find().sort(new BasicDBObject("timestamp", 1)).limit(2);
-        MongoCursor<Document> iterator = cursor.iterator();
-        while(iterator.hasNext()) {
-            System.out.println(iterator.next());
+        for (Document document : cursor) {
+            System.out.println(document);
         }
         System.out.println();
         for (long pos = 20020819173202000L; pos < 20220819173202000L; pos++) {

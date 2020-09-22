@@ -8,7 +8,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public class ZipExtractor {
-    private static Logger log = LoggerFactory.getLogger(ZipExtractor.class);
+    private final static Logger LOG = LoggerFactory.getLogger(ZipExtractor.class);
 
     private final static String CSV_SUFFIX = ".csv";
     private final static int BUFFER_SIZE = 4096;
@@ -20,7 +20,7 @@ public class ZipExtractor {
         byte[] buffer = new byte[BUFFER_SIZE];
         while (zipEntry != null) {
             if (zipEntry.getName().endsWith(CSV_SUFFIX)) {
-                log.info(zipEntry.getName());
+                LOG.info(zipEntry.getName());
                 csvFile = File.createTempFile(zipEntry.getName(), CSV_SUFFIX);
                 FileOutputStream fos = new FileOutputStream(csvFile);
                 int len;

@@ -11,8 +11,7 @@ public class DatabaseFactory {
     public static MongoDatabase create(Properties properties) {
         MongoClient mongoClient = new MongoClient(
                 properties.getProperty("dataloader.mongo.host"),
-                Integer.valueOf(properties.getProperty("dataloader.mongo.port")));
-        MongoDatabase db = mongoClient.getDatabase(DB_NAME);
-        return db;
+                Integer.parseInt(properties.getProperty("dataloader.mongo.port")));
+        return mongoClient.getDatabase(DB_NAME);
     }
 }

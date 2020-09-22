@@ -15,7 +15,7 @@ public class CandleFactory {
     // different to the other one
     private static final SimpleDateFormat STRING_TO_DATE = new SimpleDateFormat("yyyyMMddHHmmssSSS");
 
-    public Document create(List<CSVRecord> records) throws ParseException {
+    public Document create(List<CSVRecord> records, String pair) throws ParseException {
         TickFacade first = new TickFacade(records.get(0));
         BigDecimal open = first.getMid();
         BigDecimal close = new TickFacade(records.get(records.size() - 1)).getMid();
@@ -31,6 +31,7 @@ public class CandleFactory {
         Document candle = new Document();
         candle.append("timestamp", timestamp);
         Date tickDate = STRING_TO_DATE.parse(Long.toString(first.getTimestamp()));
+        candle.append("pair", pair);
         candle.append("date", FORMATTER.format(tickDate));
         candle.append("open", open);
         candle.append("high", high);
