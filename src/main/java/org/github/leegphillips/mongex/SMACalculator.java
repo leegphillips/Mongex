@@ -22,7 +22,7 @@ import static org.github.leegphillips.mongex.SortingFactory.LATEST;
 public class SMACalculator {
     private static final Logger LOG = LoggerFactory.getLogger(SMACalculator.class);
 
-    private static final String COLLECTION_NAME = "SMAS";
+    private static final String COLLECTION_NAME = "SMA's";
     private static final int[] COMMON_SMAS = new int[]{10, 20, 50, 100, 200};
     private static final int WINDOW_SIZE = COMMON_SMAS[COMMON_SMAS.length - 1];
 
