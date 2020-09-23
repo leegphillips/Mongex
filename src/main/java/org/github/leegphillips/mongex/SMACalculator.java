@@ -47,6 +47,7 @@ public class SMACalculator {
 
     // this could be optimised to fetch more than one day at a time
     private void execute() {
+        long start = System.currentTimeMillis();
         MongoCollection<Document> candles = db.getCollection(CandleLoader.COLLECTION_NAME);
         MongoCollection<Document> smas = db.getCollection(COLLECTION_NAME);
         smas.createIndex(new Document("date", -1));
@@ -69,7 +70,7 @@ public class SMACalculator {
 
                 MongoCursor<Document> cursor = candles.find(search).limit(1).cursor();
                 if (!cursor.hasNext()) {
-                    // TODO need to handle the case at the start of the dataset where we have consecutive empty days whilst also handling weekends and no trade days
+                    // need to handle the case at the start of the dataset where we have consecutive empty days whilst also handling weekends and no trade days
                     continue;
                 }
                 Document candle = cursor.next();
@@ -113,5 +114,6 @@ public class SMACalculator {
                 }
             }
         }
+        LOG.info("Completed in " + (System.currentTimeMillis() - start) + "ms");
     }
 }
