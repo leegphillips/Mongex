@@ -12,10 +12,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -26,11 +24,12 @@ public class CandleLoader extends AbstractLoader {
     private static final CandleFactory CANDLE_FACTORY = new CandleFactory();
 
     private static final DateTimeFormatter STR2DATE = DateTimeFormatter.ofPattern("yyyyMMdd HHmmssSSS");
-    private static final String TICK_SIZE = "1M";
 
+    private final CandleSpecification candleSpecification;
 
-    public CandleLoader(Properties properties, MongoDatabase db, ZipExtractor extractor, DocumentFactory df) {
+    public CandleLoader(Properties properties, MongoDatabase db, ZipExtractor extractor, DocumentFactory df, CandleSpecification candleSpecification) {
         super(properties, db, extractor, df);
+        this.candleSpecification = candleSpecification;
     }
 
     public static void main(String[] args) throws IOException, ParseException {
@@ -38,7 +37,7 @@ public class CandleLoader extends AbstractLoader {
         MongoDatabase db = DatabaseFactory.create(properties);
         ZipExtractor extractor = new ZipExtractor();
         DocumentFactory df = new DocumentFactory();
-        new CandleLoader(properties, db, extractor, df).execute();
+        new CandleLoader(properties, db, extractor, df, CandleDefinitions.FIVE_M).execute();
     }
 
     @Override
@@ -50,19 +49,19 @@ public class CandleLoader extends AbstractLoader {
         for (CSVRecord record : records) {
             LocalDateTime time = LocalDateTime.parse(record.get(0), STR2DATE);
             if (batchFloor == null) {
-                batchFloor = time.truncatedTo(ChronoUnit.MINUTES);
-                batchCeiling = batchFloor.plus(Duration.ofMinutes(1));
+                batchFloor = candleSpecification.getFloor(time);
+                batchCeiling = candleSpecification.getCeiling(batchFloor);
             }
 
             if (!time.isBefore(batchCeiling)) {
-                candles.add(CANDLE_FACTORY.create(batch, pair, TICK_SIZE, batchCeiling));
+                candles.add(CANDLE_FACTORY.create(batch, pair, candleSpecification.getTickSize(), batchCeiling));
                 batch = new ArrayList<>();
-                batchFloor = time.truncatedTo(ChronoUnit.MINUTES);
-                batchCeiling = batchFloor.plus(Duration.ofMinutes(1));
+                batchFloor = candleSpecification.getFloor(time);
+                batchCeiling = candleSpecification.getCeiling(batchFloor);
             }
             batch.add(record);
         }
-        candles.add(CANDLE_FACTORY.create(batch, pair, TICK_SIZE, batchCeiling));
+        candles.add(CANDLE_FACTORY.create(batch, pair, candleSpecification.getTickSize(), batchCeiling));
         log.info("Adding " + candles.size() + " candles");
         tickCollection.insertMany(candles);
     }
