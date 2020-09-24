@@ -32,7 +32,7 @@ public class CandleDefinitions {
         public LocalDateTime getFloor(LocalDateTime time) {
             LocalDateTime current = time.truncatedTo(ChronoUnit.HOURS);
             LocalDateTime next = getCeiling(current);
-            while (next.isBefore(time)) {
+            while (next.isBefore(time) || next.isEqual(time)) {
                 current = next;
                 next = getCeiling(current);
             }
