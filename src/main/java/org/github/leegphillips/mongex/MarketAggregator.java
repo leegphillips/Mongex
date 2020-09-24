@@ -31,6 +31,7 @@ public class MarketAggregator {
     }
 
     private void execute() {
+        long start = System.currentTimeMillis();
         MongoCollection<Document> candles = db.getCollection(CandleLoader.COLLECTION_NAME);
         MongoCollection<Document> market = db.getCollection(COLLECTION_NAME);
         market.createIndex(new Document("date", -1));
@@ -54,5 +55,6 @@ public class MarketAggregator {
                 LOG.info("Date: " + date + " Market size: " + marketSize);
             }
         }
+        LOG.info("Completed in " + (System.currentTimeMillis() - start) + "ms");
     }
 }

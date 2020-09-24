@@ -21,7 +21,7 @@ import java.util.Properties;
 public class CandleLoader extends AbstractLoader {
     private static final Logger log = LoggerFactory.getLogger(CandleLoader.class);
 
-    public static final String COLLECTION_NAME = "CANDLES 1D";
+    public static final String COLLECTION_NAME = "CANDLES";
 
     private static final CandleFactory CANDLE_FACTORY = new CandleFactory();
     private static final SimpleDateFormat DATE_TO_DAY = new SimpleDateFormat("dd");
