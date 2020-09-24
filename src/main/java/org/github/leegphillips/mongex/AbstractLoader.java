@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.text.ParseException;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Properties;
 
 import static org.github.leegphillips.mongex.DocumentFactory.TIMESTAMP_FIELD;
@@ -34,7 +35,7 @@ public abstract class AbstractLoader {
 
     public void execute() throws IOException, ParseException {
         File[] files = new File(properties.getProperty(SOURCE_DIR)).listFiles();
-        Arrays.sort(files, (o1, o2) -> o1.getName().compareTo(o2.getName()));
+        Arrays.sort(files, Comparator.comparing(File::getName));
 
         log.info("Loading " + files.length + " files");
         long start = System.currentTimeMillis();
