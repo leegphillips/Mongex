@@ -1,22 +1,28 @@
 package org.github.leegphillips.mongex;
 
+import lombok.NonNull;
+import lombok.ToString;
 import org.apache.commons.csv.CSVRecord;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
+@ToString
 public class TickFacade {
     private final long timestamp;
-    private String bidInternal;
-    private String askInternal;
-    private BigDecimal bid;
-    private BigDecimal ask;
+    private final BigDecimal bid;
+    private final BigDecimal ask;
     private BigDecimal mid;
 
-    public TickFacade(CSVRecord record) {
+    public TickFacade(@NonNull CSVRecord record) {
+
+        // assign first for Lombok error printing
         timestamp = Long.parseLong(record.get(0).replaceAll("\\s", ""));
-        bidInternal = record.get(2).trim();
-        askInternal = record.get(1).trim();
+        bid = new BigDecimal(record.get(2).trim());
+        ask = new BigDecimal(record.get(1).trim());
+
+        if (bid.compareTo(ask) > 0 || ask.compareTo(BigDecimal.ZERO) < 0 || bid.compareTo(BigDecimal.ZERO) < 0)
+            throw new IllegalArgumentException(this.toString());
     }
 
     public long getTimestamp() {
@@ -24,18 +30,10 @@ public class TickFacade {
     }
 
     public BigDecimal getBid() {
-        if (bid == null) {
-            bid = new BigDecimal(bidInternal);
-            bidInternal = null;
-        }
         return bid;
     }
 
     public BigDecimal getAsk() {
-        if (ask == null) {
-            ask = new BigDecimal(askInternal);
-            askInternal = null;
-        }
         return ask;
     }
 
@@ -44,7 +42,7 @@ public class TickFacade {
         if (mid == null) {
             mid = getAsk()
                     .add(getBid())
-                    .divide(BigDecimal.valueOf(2), RoundingMode.HALF_EVEN);
+                    .divide(BigDecimal.valueOf(2), 4, RoundingMode.HALF_EVEN);
         }
         return mid;
     }

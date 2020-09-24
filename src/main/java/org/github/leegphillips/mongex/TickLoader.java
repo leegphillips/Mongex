@@ -16,6 +16,7 @@ import java.util.Properties;
 
 import static org.github.leegphillips.mongex.PropertiesSingleton.BATCH_SIZE;
 
+@Deprecated
 public class TickLoader extends AbstractLoader {
     private static final Logger log = LoggerFactory.getLogger(TickLoader.class);
 
