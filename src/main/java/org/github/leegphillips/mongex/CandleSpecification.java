@@ -8,4 +8,6 @@ public interface CandleSpecification {
     LocalDateTime getFloor(LocalDateTime time);
 
     LocalDateTime getCeiling(LocalDateTime floor);
+
+    int getEventsPerDay();
 }

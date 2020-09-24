@@ -19,8 +19,9 @@ import java.util.List;
 import java.util.Properties;
 
 public class CandleLoader extends AbstractLoader {
+    private static final Logger LOG = LoggerFactory.getLogger(CandleLoader.class);
+
     public static final String COLLECTION_NAME = "CANDLES";
-    private static final Logger log = LoggerFactory.getLogger(CandleLoader.class);
     private static final CandleFactory CANDLE_FACTORY = new CandleFactory();
 
     private static final DateTimeFormatter STR2DATE = DateTimeFormatter.ofPattern("yyyyMMdd HHmmssSSS");
@@ -54,15 +55,15 @@ public class CandleLoader extends AbstractLoader {
             }
 
             if (!time.isBefore(batchCeiling)) {
-                candles.add(CANDLE_FACTORY.create(batch, pair, candleSpecification.getTickSize(), batchCeiling));
+                candles.add(CANDLE_FACTORY.create(batch, pair, candleSpecification.getTickSize(), batchCeiling).toDocument());
                 batch = new ArrayList<>();
                 batchFloor = candleSpecification.getFloor(time);
                 batchCeiling = candleSpecification.getCeiling(batchFloor);
             }
             batch.add(record);
         }
-        candles.add(CANDLE_FACTORY.create(batch, pair, candleSpecification.getTickSize(), batchCeiling));
-        log.info("Adding " + candles.size() + " candles");
+        candles.add(CANDLE_FACTORY.create(batch, pair, candleSpecification.getTickSize(), batchCeiling).toDocument());
+        LOG.info("Adding " + candles.size() + " candles");
         tickCollection.insertMany(candles);
     }
 

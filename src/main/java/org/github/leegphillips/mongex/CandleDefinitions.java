@@ -20,6 +20,12 @@ public class CandleDefinitions {
         public LocalDateTime getCeiling(LocalDateTime floor) {
             return floor.plus(Duration.ofMinutes(1));
         }
+
+        @Override
+        public int getEventsPerDay() {
+            // not implemented
+            return 0;
+        }
     };
 
     final static CandleSpecification FIVE_M = new CandleSpecification() {
@@ -42,6 +48,11 @@ public class CandleDefinitions {
         @Override
         public LocalDateTime getCeiling(LocalDateTime floor) {
             return floor.plus(Duration.ofMinutes(5));
+        }
+
+        @Override
+        public int getEventsPerDay() {
+            return 24 * 60 / 5;
         }
     };
 }
