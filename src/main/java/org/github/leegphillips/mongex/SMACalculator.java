@@ -16,9 +16,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-import static org.github.leegphillips.mongex.SortingFactory.EARLIEST;
-import static org.github.leegphillips.mongex.SortingFactory.LATEST;
-
 public class SMACalculator {
     private static final Logger LOG = LoggerFactory.getLogger(SMACalculator.class);
 
@@ -61,19 +58,13 @@ public class SMACalculator {
         for (String pair : pairs) {
             LOG.info("Processing: " + pair);
             ArrayDeque<BigDecimal> window = new ArrayDeque<>(WINDOW_SIZE);
-            LocalDate earliest = LocalDate.parse(candles.find(new Document("pair", pair)).sort(EARLIEST).limit(1).cursor().next().getString("date"));
-            LocalDate latest = LocalDate.parse(candles.find(new Document("pair", pair)).sort(LATEST).limit(1).cursor().next().getString("date")).plusDays(1);
+            List<Document> result = new ArrayList<>();
 
-            for (LocalDate current = earliest; current.isBefore(latest); current = current.plusDays(1)) {
-                Document search = new Document("pair", pair);
-                search.append("date", current.toString());
-
-                MongoCursor<Document> cursor = candles.find(search).limit(1).cursor();
-                if (!cursor.hasNext()) {
-                    // need to handle the case at the start of the dataset where we have consecutive empty days whilst also handling weekends and no trade days
-                    continue;
-                }
+            MongoCursor<Document> cursor = candles.find(new Document("pair", pair)).sort(new Document("date", 1)).cursor();
+            while (cursor.hasNext()) {
                 Document candle = cursor.next();
+
+                LocalDate current = LocalDate.parse(candle.getString("date"));
 
                 // tidy this and correct the rounding - add Candle class, move logic to there
                 // also this logic is garbage - generated ticks -> candles -> mids
@@ -87,7 +78,6 @@ public class SMACalculator {
 
                 // need array access
                 BigDecimal[] windowSnapshot = window.toArray(new BigDecimal[]{});
-                List<Document> result = new ArrayList<>();
 
                 for (int currentSMA : COMMON_SMAS) {
                     if (windowSnapshot.length >= currentSMA) {
@@ -106,12 +96,11 @@ public class SMACalculator {
                         break;
                     }
                 }
-
-                int resultSize = result.size();
-                if (resultSize > 0) {
-                    smas.insertMany(result);
-                    LOG.info("Date: " + current + " Size: " + resultSize);
-                }
+            }
+            int resultSize = result.size();
+            if (resultSize > 0) {
+                smas.insertMany(result);
+                LOG.info("Pair: " + pair + " Size: " + resultSize);
             }
         }
         LOG.info("Completed in " + (System.currentTimeMillis() - start) + "ms");
