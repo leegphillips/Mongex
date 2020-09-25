@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 @ToString
-public class TickFacade {
+public class Tick {
     private static final DateTimeFormatter STR2DATE = DateTimeFormatter.ofPattern("yyyyMMdd HHmmssSSS");
 
     private final LocalDateTime timestamp;
@@ -18,7 +18,7 @@ public class TickFacade {
     private final BigDecimal ask;
     private BigDecimal mid;
 
-    public TickFacade(@NonNull CSVRecord record) {
+    public Tick(@NonNull CSVRecord record) {
         // assign first for Lombok error printing
         timestamp = LocalDateTime.parse(record.get(0), STR2DATE);
         ask = new BigDecimal(record.get(1).trim());

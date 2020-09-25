@@ -14,7 +14,7 @@ public class DocumentFactory {
 
     public Document create(CSVRecord record) {
         try {
-            TickFacade tick = new TickFacade(record);
+            Tick tick = new Tick(record);
             Document doc = new Document();
             doc.append(TIMESTAMP_FIELD, tick.getTimestamp());
             doc.append(BID_FIELD, tick.getBid());

@@ -16,32 +16,35 @@ public class Candle {
     private final String pair;
     private final LocalDateTime timestamp;
     private final BigDecimal open;
-    private final BigDecimal high;
-    private final BigDecimal low;
-    private final BigDecimal close;
-    private final int tickCount;
+    private BigDecimal high;
+    private BigDecimal low;
+    private BigDecimal close;
+    private int tickCount = 1;
 
-    public Candle(@NonNull String duration, @NonNull String pair, @NonNull LocalDateTime timestamp,
-                  @NonNull BigDecimal open, @NonNull BigDecimal high, @NonNull BigDecimal low,
-                  @NonNull BigDecimal close, int tickCount) {
-
-        // assign these before assertions so Lombok has values for toString on error
-        this.duration = duration;
+    public Candle(@NonNull String tickSize, @NonNull String pair, @NonNull LocalDateTime batchCeiling, @NonNull Tick tick) {
+        if (tick.getTimestamp().isAfter(batchCeiling))
+            throw new IllegalStateException("Tick cannot be after candle end: " + tick + " " + batchCeiling);
+        this.duration = tickSize;
         this.pair = pair;
-        this.timestamp = timestamp;
-        this.open = open;
-        this.high = high;
-        this.low = low;
-        this.close = close;
-        this.tickCount = tickCount;
+        this.timestamp = batchCeiling;
+        this.open = tick.getMid();
+        this.high = tick.getMid();
+        this.low = tick.getMid();
+        this.close = tick.getMid();
+    }
 
-        if (tickCount < 1 ||
-                high.compareTo(low) < 0 ||
-                open.compareTo(BigDecimal.ZERO) < 0 ||
-                high.compareTo(BigDecimal.ZERO) < 0 ||
-                low.compareTo(BigDecimal.ZERO) < 0 ||
-                close.compareTo(BigDecimal.ZERO) < 0)
-            throw new IllegalArgumentException(this.toString());
+    public static Candle combiner(Candle c1, Candle c2) {
+        throw new IllegalStateException("Don't call in parallel streams or the close price will be wrong");
+    }
+
+    public Candle addTick(Tick tick) {
+        if (tick.getTimestamp().isAfter(timestamp))
+            throw new IllegalStateException("Tick cannot be after candle end: " + tick + " " + timestamp);
+        low = tick.getMid().min(low);
+        high = tick.getMid().max(high);
+        close = tick.getMid();
+        tickCount++;
+        return this;
     }
 
     public Document toDocument() {
