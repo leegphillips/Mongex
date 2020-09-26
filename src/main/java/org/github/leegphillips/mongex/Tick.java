@@ -41,10 +41,14 @@ public class Tick {
                         .divide(BigDecimal.valueOf(2), 4, RoundingMode.HALF_EVEN));
 
         boolean failed = false;
-        if (tick.bid.compareTo(tick.ask) > 0) {
-            LOG.warn(String.format("%s bid greater than ask %s %s", tick.timestamp, tick.bid, tick.ask));
-            failed = true;
-        }
+
+// the data seems to have an issue whereby the bid and ask get swapped often
+// we don't care too much about this because we are interested in the generated mid only
+// assuming the values are correct by in the wrong place, we can ignore this check
+//        if (tick.bid.compareTo(tick.ask) > 0) {
+//            LOG.warn(String.format("%s bid greater than ask %s %s", tick.timestamp, tick.bid, tick.ask));
+//            failed = true;
+//        }
 
         if (tick.ask.compareTo(BigDecimal.ZERO) < 0) {
             LOG.warn(String.format("%s ask less than 0", tick.timestamp));

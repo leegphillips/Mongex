@@ -39,14 +39,15 @@ public class TickTest {
         Tick.create(null);
     }
 
-    @Test
-    public void bidCannotBeGreaterThanAsk() {
-        when(record.get(0)).thenReturn(timestamp);
-        when(record.get(1)).thenReturn("43");
-        when(record.get(2)).thenReturn("44");
-
-        assertFalse(Tick.create(record).isPresent());
-    }
+// see note about data quality on Tick class
+//    @Test
+//    public void bidCannotBeGreaterThanAsk() {
+//        when(record.get(0)).thenReturn(timestamp);
+//        when(record.get(1)).thenReturn("43");
+//        when(record.get(2)).thenReturn("44");
+//
+//        assertFalse(Tick.create(record).isPresent());
+//    }
 
     @Test
     public void bidCannotBeNegative() {
