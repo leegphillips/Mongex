@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 
 public class CandleLoader extends AbstractLoader {
@@ -61,7 +62,9 @@ public class CandleLoader extends AbstractLoader {
                 batchFloor = candleSpecification.getFloor(time);
                 batchCeiling = candleSpecification.getCeiling(batchFloor);
             }
-            batch.add(new Tick(record));
+            Optional<Tick> tick = Tick.create(record);
+            if (tick.isPresent())
+                batch.add(tick.get());
         }
         candles.add(Candle.create(batch, pair, tickSize, batchCeiling).toDocument());
         LOG.info("Adding " + candles.size() + " candles");

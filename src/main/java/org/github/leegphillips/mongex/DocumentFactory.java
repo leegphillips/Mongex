@@ -14,7 +14,8 @@ public class DocumentFactory {
 
     public Document create(CSVRecord record) {
         try {
-            Tick tick = new Tick(record);
+            // old - sort this out later
+            Tick tick = Tick.create(record).get();
             Document doc = new Document();
             doc.append(TIMESTAMP_FIELD, tick.getTimestamp());
             doc.append(BID_FIELD, tick.getBid());

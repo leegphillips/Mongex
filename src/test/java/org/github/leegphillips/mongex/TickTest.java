@@ -12,6 +12,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -29,40 +30,40 @@ public class TickTest {
         when(record.get(1)).thenReturn("43");
         when(record.get(2)).thenReturn("43");
 
-        new Tick(record);
+        Tick.create(record);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test(expected = NullPointerException.class)
     public void cannotInstantiateWithNull() {
-        new Tick(null);
+        Tick.create(null);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void bidCannotBeGreaterThanAsk() {
         when(record.get(0)).thenReturn(timestamp);
         when(record.get(1)).thenReturn("43");
         when(record.get(2)).thenReturn("44");
 
-        new Tick(record);
+        assertFalse(Tick.create(record).isPresent());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void bidCannotBeNegative() {
         when(record.get(0)).thenReturn(timestamp);
         when(record.get(1)).thenReturn("43");
         when(record.get(2)).thenReturn("-44");
 
-        new Tick(record);
+        assertFalse(Tick.create(record).isPresent());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void askCannotBeNegative() {
         when(record.get(0)).thenReturn(timestamp);
         when(record.get(1)).thenReturn("-43");
         when(record.get(2)).thenReturn("-44");
 
-        new Tick(record);
+        assertFalse(Tick.create(record).isPresent());
     }
 
     @Test
@@ -71,14 +72,14 @@ public class TickTest {
         when(record.get(1)).thenReturn("43.01  ");
         when(record.get(2)).thenReturn("43.00  ");
 
-        new Tick(record);
+        Tick.create(record);
     }
 
     @Test(expected = DateTimeParseException.class)
     public void timestampMustBeNumerical() {
         when(record.get(0)).thenReturn("43GH");
 
-        new Tick(record);
+        Tick.create(record);
     }
 
     @Test
@@ -87,7 +88,7 @@ public class TickTest {
         when(record.get(1)).thenReturn(BigDecimal.TEN.toString());
         when(record.get(2)).thenReturn(BigDecimal.ONE.toString());
 
-        Tick tick = new Tick(record);
+        Tick tick = Tick.create(record).get();
 
         assertEquals(LocalDateTime.parse(timestamp, formatter), tick.getTimestamp());
         assertEquals(BigDecimal.TEN, tick.getAsk());

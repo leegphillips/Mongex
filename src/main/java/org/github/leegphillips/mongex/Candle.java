@@ -42,8 +42,10 @@ public class Candle {
     public static Candle create(@NonNull List<Tick> ticks, @NonNull CurrencyPair pair, @NonNull CandleSize tickSize, @NonNull LocalDateTime batchCeiling) {
         long uniqueTimestamps = ticks.stream().map(Tick::getTimestamp).distinct().count();
         int totalTicks = ticks.size();
-        if (uniqueTimestamps != totalTicks)
-            LOG.warn(format("%d duplicate ticks found in %s %s", totalTicks - uniqueTimestamps, pair.getLabel(), batchCeiling));
+        long difference = totalTicks - uniqueTimestamps;
+        // too much noise
+        if (difference > 10)
+            LOG.warn(format("%d duplicate ticks found in %s %s", difference, pair.getLabel(), batchCeiling));
 
         Candle candle = ticks.parallelStream()
                 .map(tick -> tickValidator(tick, batchCeiling))
