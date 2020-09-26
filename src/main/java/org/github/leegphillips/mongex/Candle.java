@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 
 import static java.lang.String.format;
 
@@ -39,21 +40,26 @@ public class Candle {
         this.tickCount = tickCount;
     }
 
-    public static Candle create(@NonNull List<Tick> ticks, @NonNull CurrencyPair pair, @NonNull CandleSize tickSize, @NonNull LocalDateTime batchCeiling) {
+    public static Optional<Candle> create(@NonNull List<Tick> ticks, @NonNull CurrencyPair pair, @NonNull CandleSize tickSize, @NonNull LocalDateTime batchCeiling) {
         long uniqueTimestamps = ticks.stream().map(Tick::getTimestamp).distinct().count();
         int totalTicks = ticks.size();
         long difference = totalTicks - uniqueTimestamps;
         // too much noise
-        if (difference > 10)
+        if (difference > 50)
             LOG.warn(format("%d duplicate ticks found in %s %s", difference, pair.getLabel(), batchCeiling));
 
-        Candle candle = ticks.parallelStream()
+        Optional<Candle> optionalCandle = ticks.parallelStream()
                 .map(tick -> tickValidator(tick, batchCeiling))
                 .map(tick -> tickMapper(tickSize, pair, tick))
-                .reduce(Candle::combiner)
-                .orElseThrow(() -> new IllegalStateException(format("Candles cannot be empty %d", ticks.size())));
+                .reduce(Candle::combiner);
 
-        return new Candle(candle.duration, candle.pair, batchCeiling, candle.open, candle.high, candle.low, candle.close, candle.tickCount);
+        if (optionalCandle.isPresent()) {
+            Candle candle = optionalCandle.get();
+            return Optional.of(new Candle(candle.duration, candle.pair, batchCeiling, candle.open, candle.high, candle.low, candle.close, candle.tickCount));
+        } else {
+            LOG.warn(format("No valid ticks found for Candle %s %s", pair.getLabel(), batchCeiling));
+            return optionalCandle;
+        }
     }
 
     private static Tick tickValidator(Tick tick, LocalDateTime batchCeiling) {

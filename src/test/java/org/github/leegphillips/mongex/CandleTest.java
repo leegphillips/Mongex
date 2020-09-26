@@ -13,6 +13,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.when;
 
 @SuppressWarnings("ConstantConditions")
@@ -52,9 +53,9 @@ public class CandleTest {
         Candle.create(batch, pair, CandleSize.FIVE_MINUTES, null);
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void cannotCreateEmptyCandle() {
-        Candle.create(emptyList(), pair, CandleSize.FIVE_MINUTES, LocalDateTime.now());
+        assertFalse(Candle.create(emptyList(), pair, CandleSize.FIVE_MINUTES, LocalDateTime.now()).isPresent());
     }
 
     @Test(expected = IllegalStateException.class)
@@ -71,7 +72,7 @@ public class CandleTest {
         BigDecimal mid = BigDecimal.ONE;
         CandleSize duration = CandleSize.FIVE_MINUTES;
         behave(tick1, mid, time);
-        Candle candle = Candle.create(singletonList(tick1), pair, duration, time);
+        Candle candle = Candle.create(singletonList(tick1), pair, duration, time).get();
         verifyCandle(candle, duration, pair, time, mid, mid, mid, mid, 1);
     }
 
@@ -84,7 +85,7 @@ public class CandleTest {
         LocalDateTime later = base.plusHours(1);
         BigDecimal up = mid.add(BigDecimal.ONE);
         behave(tick2, up, later);
-        Candle candle = Candle.create(asList(tick1, tick2), pair, duration, later);
+        Candle candle = Candle.create(asList(tick1, tick2), pair, duration, later).get();
         verifyCandle(candle, duration, pair, later, mid, up, mid, up, 2);
     }
 
@@ -97,7 +98,7 @@ public class CandleTest {
         LocalDateTime later = base.plusHours(1);
         BigDecimal down = mid.subtract(new BigDecimal("0.5"));
         behave(tick2, down, later);
-        Candle candle = Candle.create(asList(tick1, tick2), pair, duration, later);
+        Candle candle = Candle.create(asList(tick1, tick2), pair, duration, later).get();
         verifyCandle(candle, duration, pair, later, mid, mid, down, down, 2);
     }
 
@@ -111,7 +112,7 @@ public class CandleTest {
         behave(tick2, mid, later);
         LocalDateTime evenLater = later.plusHours(1);
         behave(tick3, mid, evenLater);
-        Candle candle = Candle.create(asList(tick1, tick2, tick3), pair, duration, evenLater);
+        Candle candle = Candle.create(asList(tick1, tick2, tick3), pair, duration, evenLater).get();
         verifyCandle(candle, duration, pair, evenLater, mid, mid, mid, mid, 3);
     }
 
@@ -127,7 +128,7 @@ public class CandleTest {
         LocalDateTime evenLater = later.plusHours(1);
         BigDecimal mid3 = mid2.add(BigDecimal.ONE);
         behave(tick3, mid3, evenLater);
-        Candle candle = Candle.create(asList(tick1, tick2, tick3), pair, duration, evenLater);
+        Candle candle = Candle.create(asList(tick1, tick2, tick3), pair, duration, evenLater).get();
         verifyCandle(candle, duration, pair, evenLater, mid, mid3, mid, mid3, 3);
     }
 
@@ -143,7 +144,7 @@ public class CandleTest {
         LocalDateTime evenLater = later.plusHours(1);
         BigDecimal mid3 = mid2.subtract(new BigDecimal("0.25"));
         behave(tick3, mid3, evenLater);
-        Candle candle = Candle.create(asList(tick1, tick2, tick3), pair, duration, evenLater);
+        Candle candle = Candle.create(asList(tick1, tick2, tick3), pair, duration, evenLater).get();
         verifyCandle(candle, duration, pair, evenLater, mid, mid, mid3, mid3, 3);
     }
 
@@ -159,7 +160,7 @@ public class CandleTest {
         LocalDateTime evenLater = later.plusHours(1);
         BigDecimal mid3 = mid.add(new BigDecimal("0.25"));
         behave(tick3, mid3, evenLater);
-        Candle candle = Candle.create(asList(tick1, tick2, tick3), pair, duration, evenLater);
+        Candle candle = Candle.create(asList(tick1, tick2, tick3), pair, duration, evenLater).get();
         verifyCandle(candle, duration, pair, evenLater, mid, mid2, mid, mid3, 3);
     }
 
@@ -175,7 +176,7 @@ public class CandleTest {
         LocalDateTime evenLater = later.plusHours(1);
         BigDecimal mid3 = mid.add(new BigDecimal("0.25"));
         behave(tick3, mid3, evenLater);
-        Candle candle = Candle.create(asList(tick1, tick2, tick3), pair, duration, evenLater);
+        Candle candle = Candle.create(asList(tick1, tick2, tick3), pair, duration, evenLater).get();
         verifyCandle(candle, duration, pair, evenLater, mid, mid3, mid2, mid3, 3);
     }
 

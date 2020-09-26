@@ -57,7 +57,9 @@ public class CandleLoader extends AbstractLoader {
             }
 
             if (!time.isBefore(batchCeiling)) {
-                candles.add(Candle.create(batch, pair, tickSize, batchCeiling).toDocument());
+                Optional<Candle> candle = Candle.create(batch, pair, tickSize, batchCeiling);
+                if (candle.isPresent())
+                    candles.add(candle.get().toDocument());
                 batch = new ArrayList<>();
                 batchFloor = candleSpecification.getFloor(time);
                 batchCeiling = candleSpecification.getCeiling(batchFloor);
@@ -66,7 +68,9 @@ public class CandleLoader extends AbstractLoader {
             if (tick.isPresent())
                 batch.add(tick.get());
         }
-        candles.add(Candle.create(batch, pair, tickSize, batchCeiling).toDocument());
+        Optional<Candle> candle = Candle.create(batch, pair, tickSize, batchCeiling);
+        if (candle.isPresent())
+            candles.add(candle.get().toDocument());
         LOG.info("Adding " + candles.size() + " candles");
         tickCollection.insertMany(candles);
     }
