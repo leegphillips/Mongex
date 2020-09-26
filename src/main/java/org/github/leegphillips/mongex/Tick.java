@@ -3,18 +3,14 @@ package org.github.leegphillips.mongex;
 import lombok.NonNull;
 import lombok.ToString;
 import org.apache.commons.csv.CSVRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Optional;
 
 @ToString
 public class Tick {
-    private static final Logger LOG = LoggerFactory.getLogger(Tick.class);
 
     private static final DateTimeFormatter STR2DATE = DateTimeFormatter.ofPattern("yyyyMMdd HHmmssSSS");
 
@@ -22,6 +18,7 @@ public class Tick {
     private final BigDecimal bid;
     private final BigDecimal ask;
     private final BigDecimal mid;
+    private boolean error = false;
 
     private Tick(LocalDateTime timestamp, BigDecimal bid, BigDecimal ask, BigDecimal mid) {
         this.timestamp = timestamp;
@@ -30,7 +27,7 @@ public class Tick {
         this.mid = mid;
     }
 
-    public static Optional<Tick> create(@NonNull CSVRecord record) {
+    public static Tick create(@NonNull CSVRecord record) {
         LocalDateTime timestamp = LocalDateTime.parse(record.get(0), STR2DATE);
         BigDecimal ask = new BigDecimal(record.get(1).trim());
         BigDecimal bid = new BigDecimal(record.get(2).trim());
@@ -39,8 +36,6 @@ public class Tick {
                 ask,
                 ask.add(bid)
                         .divide(BigDecimal.valueOf(2), 4, RoundingMode.HALF_EVEN));
-
-        boolean failed = false;
 
 // the data seems to have an issue whereby the bid and ask get swapped often
 // we don't care too much about this because we are interested in the generated mid only
@@ -51,16 +46,14 @@ public class Tick {
 //        }
 
         if (tick.ask.compareTo(BigDecimal.ZERO) < 0) {
-            LOG.warn(String.format("%s ask less than 0", tick.timestamp));
-            failed = true;
+            tick.error = true;
         }
 
         if (tick.bid.compareTo(BigDecimal.ZERO) < 0) {
-            LOG.warn(String.format("%s bid less than 0", tick.timestamp));
-            failed = true;
+            tick.error = true;
         }
 
-        return failed ? Optional.empty() : Optional.of(tick);
+        return tick;
     }
 
     public LocalDateTime getTimestamp() {
@@ -77,5 +70,9 @@ public class Tick {
 
     public BigDecimal getMid() {
         return mid;
+    }
+
+    public boolean isError() {
+        return error;
     }
 }

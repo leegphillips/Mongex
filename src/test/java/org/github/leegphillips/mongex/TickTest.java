@@ -12,7 +12,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -55,7 +55,7 @@ public class TickTest {
         when(record.get(1)).thenReturn("43");
         when(record.get(2)).thenReturn("-44");
 
-        assertFalse(Tick.create(record).isPresent());
+        assertTrue(Tick.create(record).isError());
     }
 
     @Test
@@ -64,7 +64,7 @@ public class TickTest {
         when(record.get(1)).thenReturn("-43");
         when(record.get(2)).thenReturn("-44");
 
-        assertFalse(Tick.create(record).isPresent());
+        assertTrue(Tick.create(record).isError());
     }
 
     @Test
@@ -89,7 +89,7 @@ public class TickTest {
         when(record.get(1)).thenReturn(BigDecimal.TEN.toString());
         when(record.get(2)).thenReturn(BigDecimal.ONE.toString());
 
-        Tick tick = Tick.create(record).get();
+        Tick tick = Tick.create(record);
 
         assertEquals(LocalDateTime.parse(timestamp, formatter), tick.getTimestamp());
         assertEquals(BigDecimal.TEN, tick.getAsk());

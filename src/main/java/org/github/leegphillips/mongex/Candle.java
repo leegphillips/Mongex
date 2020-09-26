@@ -10,7 +10,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Optional;
 
 import static java.lang.String.format;
 
@@ -28,8 +27,12 @@ public class Candle {
     private final BigDecimal low;
     private final BigDecimal close;
     private final int tickCount;
+    private final int errorCount;
+    private final long duplicatesCount;
 
-    private Candle(CandleSize duration, CurrencyPair pair, LocalDateTime timestamp, BigDecimal open, BigDecimal high, BigDecimal low, BigDecimal close, int tickCount) {
+
+    private Candle(CandleSize duration, CurrencyPair pair, LocalDateTime timestamp, BigDecimal open, BigDecimal high,
+                   BigDecimal low, BigDecimal close, int tickCount, long duplicatesCount, int errorCount) {
         this.duration = duration;
         this.pair = pair;
         this.timestamp = timestamp;
@@ -38,28 +41,22 @@ public class Candle {
         this.low = low;
         this.close = close;
         this.tickCount = tickCount;
+        this.duplicatesCount = duplicatesCount;
+        this.errorCount = errorCount;
     }
 
-    public static Optional<Candle> create(@NonNull List<Tick> ticks, @NonNull CurrencyPair pair, @NonNull CandleSize tickSize, @NonNull LocalDateTime batchCeiling) {
-        long uniqueTimestamps = ticks.stream().map(Tick::getTimestamp).distinct().count();
-        int totalTicks = ticks.size();
-        long difference = totalTicks - uniqueTimestamps;
-        // too much noise
-        if (difference > 50)
-            LOG.warn(format("%d duplicate ticks found in %s %s", difference, pair.getLabel(), batchCeiling));
+    public static Candle create(@NonNull List<Tick> ticks, @NonNull CurrencyPair pair,
+                                @NonNull CandleSize tickSize, @NonNull LocalDateTime batchCeiling) {
+        long duplicates = ticks.size() - ticks.stream().map(Tick::getTimestamp).distinct().count();
 
-        Optional<Candle> optionalCandle = ticks.parallelStream()
+        Candle candle = ticks.parallelStream()
                 .map(tick -> tickValidator(tick, batchCeiling))
                 .map(tick -> tickMapper(tickSize, pair, tick))
-                .reduce(Candle::combiner);
+                .reduce(Candle::combiner)
+                .orElseThrow(() -> new IllegalStateException(format("Candles need at least one tick %s %s %s", pair.getLabel(), ticks.size(), batchCeiling)));
 
-        if (optionalCandle.isPresent()) {
-            Candle candle = optionalCandle.get();
-            return Optional.of(new Candle(candle.duration, candle.pair, batchCeiling, candle.open, candle.high, candle.low, candle.close, candle.tickCount));
-        } else {
-            LOG.warn(format("No valid ticks found for Candle %s %s", pair.getLabel(), batchCeiling));
-            return optionalCandle;
-        }
+        return new Candle(candle.duration, candle.pair, batchCeiling, candle.open, candle.high, candle.low,
+                candle.close, candle.tickCount, duplicates, candle.errorCount);
     }
 
     private static Tick tickValidator(Tick tick, LocalDateTime batchCeiling) {
@@ -69,27 +66,31 @@ public class Candle {
     }
 
     private static Candle tickMapper(CandleSize duration, CurrencyPair pair, Tick tick) {
-        LOG.trace(format("Mapping %s %s %s", duration, pair, tick));
-        return new Candle(duration, pair, tick.getTimestamp(), tick.getMid(), tick.getMid(), tick.getMid(), tick.getMid(), 1);
+        return new Candle(duration, pair, tick.getTimestamp(), tick.getMid(), tick.getMid(), tick.getMid(), tick.getMid(),
+                1, 0, tick.isError() ? 1 : 0);
     }
 
     private static Candle combiner(Candle c1, Candle c2) {
-        LOG.trace(format("Combining %s %s", c1, c2));
         if (c1.duration != c2.duration)
             throw new IllegalStateException("Cannot combine candles with different durations:" + c1 + " " + c2);
 
         if (!c1.pair.getLabel().contentEquals(c2.pair.getLabel()))
             throw new IllegalStateException("Cannot combine candles from different pairs:" + c1 + " " + c2);
 
+        int tickCount = c1.tickCount + c2.tickCount;
+        int errorCount = c1.errorCount + c2.errorCount;
+        BigDecimal low = c1.low.min(c2.low);
+        BigDecimal high = c1.high.max(c2.high);
+        boolean timestampCollision = c1.timestamp.isEqual(c2.timestamp);
         boolean c1IsBefore = c1.timestamp.isBefore(c2.timestamp);
         LocalDateTime timestamp = c1IsBefore ? c2.timestamp : c1.timestamp;
-        BigDecimal low = c1.low.min(c2.low);
-        BigDecimal open = c1IsBefore ? c1.open : c2.open;
-        BigDecimal high = c1.high.max(c2.high);
-        BigDecimal close = c1IsBefore ? c2.close : c1.close;
-        int tickCount = c1.tickCount + c2.tickCount;
+        BigDecimal open = timestampCollision || c1IsBefore ? c1.open : c2.open;
+        BigDecimal close = timestampCollision ? c1.close : c1IsBefore ? c2.close : c1.close;
+        long duplicates = c1.duplicatesCount + c2.duplicatesCount;
+        if (timestampCollision)
+            duplicates++;
 
-        return new Candle(c1.duration, c1.pair, timestamp, open, high, low, close, tickCount);
+        return new Candle(c1.duration, c1.pair, timestamp, open, high, low, close, tickCount, duplicates, errorCount);
     }
 
     public Document toDocument() {
@@ -103,6 +104,8 @@ public class Candle {
         result.append("low", low);
         result.append("close", close);
         result.append("tick count", tickCount);
+        result.append("duplicate count", duplicatesCount);
+        result.append("error count", errorCount);
 
         return result;
     }
@@ -137,5 +140,13 @@ public class Candle {
 
     public int getTickCount() {
         return tickCount;
+    }
+
+    public long getDuplicatesCount() {
+        return duplicatesCount;
+    }
+
+    public int getErrorCount() {
+        return errorCount;
     }
 }

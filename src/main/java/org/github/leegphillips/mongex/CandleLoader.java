@@ -16,14 +16,11 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Properties;
 
 public class CandleLoader extends AbstractLoader {
-    private static final Logger LOG = LoggerFactory.getLogger(CandleLoader.class);
-
     public static final String COLLECTION_NAME = "CANDLES";
-
+    private static final Logger LOG = LoggerFactory.getLogger(CandleLoader.class);
     private static final DateTimeFormatter STR2DATE = DateTimeFormatter.ofPattern("yyyyMMdd HHmmssSSS");
 
     private final CandleSpecification candleSpecification;
@@ -57,26 +54,17 @@ public class CandleLoader extends AbstractLoader {
             }
 
             if (!time.isBefore(batchCeiling)) {
-                Optional<Candle> candle = Candle.create(batch, pair, tickSize, batchCeiling);
-                if (candle.isPresent())
-                    candles.add(candle.get().toDocument());
+                candles.add(Candle.create(batch, pair, tickSize, batchCeiling).toDocument());
                 batch = new ArrayList<>();
                 batchFloor = candleSpecification.getFloor(time);
                 batchCeiling = candleSpecification.getCeiling(batchFloor);
             }
-            Optional<Tick> tick = Tick.create(record);
-            if (tick.isPresent())
-                batch.add(tick.get());
+            batch.add(Tick.create(record));
         }
-        Optional<Candle> candle = Candle.create(batch, pair, tickSize, batchCeiling);
-        if (candle.isPresent())
-            candles.add(candle.get().toDocument());
+        candles.add(Candle.create(batch, pair, tickSize, batchCeiling).toDocument());
 
-        int candleCount = candles.size();
-        if (candleCount > 0) {
-            LOG.info("Adding " + candleCount + " candles");
-            tickCollection.insertMany(candles);
-        }
+        tickCollection.insertMany(candles);
+        LOG.info("Adding " + candles.size() + " candles");
     }
 
     @Override
