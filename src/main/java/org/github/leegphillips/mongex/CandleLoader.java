@@ -71,8 +71,12 @@ public class CandleLoader extends AbstractLoader {
         Optional<Candle> candle = Candle.create(batch, pair, tickSize, batchCeiling);
         if (candle.isPresent())
             candles.add(candle.get().toDocument());
-        LOG.info("Adding " + candles.size() + " candles");
-        tickCollection.insertMany(candles);
+
+        int candleCount = candles.size();
+        if (candleCount > 0) {
+            LOG.info("Adding " + candleCount + " candles");
+            tickCollection.insertMany(candles);
+        }
     }
 
     @Override
