@@ -45,13 +45,7 @@ public class Tick {
 //            failed = true;
 //        }
 
-        if (tick.ask.compareTo(BigDecimal.ZERO) < 0) {
-            tick.error = true;
-        }
-
-        if (tick.bid.compareTo(BigDecimal.ZERO) < 0) {
-            tick.error = true;
-        }
+        tick.error = tick.ask.compareTo(BigDecimal.ZERO) < 0 || tick.bid.compareTo(BigDecimal.ZERO) < 0;
 
         return tick;
     }
