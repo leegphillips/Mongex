@@ -3,54 +3,89 @@ package org.github.leegphillips.mongex;
 import lombok.NonNull;
 import lombok.ToString;
 import org.bson.Document;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+
+import static java.lang.String.format;
 
 @ToString
 public class Candle {
+    private static final Logger LOG = LoggerFactory.getLogger(Candle.class);
+
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
-    private final String duration;
-    private final String pair;
+    private final CandleSize duration;
+    private final CurrencyPair pair;
     private final LocalDateTime timestamp;
     private final BigDecimal open;
-    private BigDecimal high;
-    private BigDecimal low;
-    private BigDecimal close;
-    private int tickCount = 1;
+    private final BigDecimal high;
+    private final BigDecimal low;
+    private final BigDecimal close;
+    private final int tickCount;
 
-    public Candle(@NonNull String tickSize, @NonNull String pair, @NonNull LocalDateTime batchCeiling, @NonNull Tick tick) {
-        if (tick.getTimestamp().isAfter(batchCeiling))
-            throw new IllegalStateException("Tick cannot be after candle end: " + tick + " " + batchCeiling);
-        this.duration = tickSize;
+    private Candle(CandleSize duration, CurrencyPair pair, LocalDateTime timestamp, BigDecimal open, BigDecimal high, BigDecimal low, BigDecimal close, int tickCount) {
+        this.duration = duration;
         this.pair = pair;
-        this.timestamp = batchCeiling;
-        this.open = tick.getMid();
-        this.high = tick.getMid();
-        this.low = tick.getMid();
-        this.close = tick.getMid();
+        this.timestamp = timestamp;
+        this.open = open;
+        this.high = high;
+        this.low = low;
+        this.close = close;
+        this.tickCount = tickCount;
     }
 
-    public static Candle combiner(Candle c1, Candle c2) {
-        throw new IllegalStateException("Don't call in parallel streams or the close price will be wrong");
+    public static Candle create(@NonNull List<Tick> ticks, @NonNull CurrencyPair pair, @NonNull CandleSize tickSize, @NonNull LocalDateTime batchCeiling) {
+        if (ticks.stream().map(Tick::getTimestamp).distinct().count() != ticks.size())
+            throw new IllegalStateException(format("Candles must be created from a set of ticks with unique timestamps %s %s", pair, batchCeiling));
+
+        Candle candle = ticks.parallelStream()
+                .map(tick -> tickValidator(tick, batchCeiling))
+                .map(tick -> tickMapper(tickSize, pair, tick))
+                .reduce(Candle::combiner)
+                .orElseThrow(() -> new IllegalStateException(format("Candles cannot be empty %d", ticks.size())));
+
+        return new Candle(candle.duration, candle.pair, batchCeiling, candle.open, candle.high, candle.low, candle.close, candle.tickCount);
     }
 
-    public Candle addTick(Tick tick) {
-        if (tick.getTimestamp().isAfter(timestamp))
-            throw new IllegalStateException("Tick cannot be after candle end: " + tick + " " + timestamp);
-        low = tick.getMid().min(low);
-        high = tick.getMid().max(high);
-        close = tick.getMid();
-        tickCount++;
-        return this;
+    private static Tick tickValidator(Tick tick, LocalDateTime batchCeiling) {
+        if (tick.getTimestamp().isAfter(batchCeiling))
+            throw new IllegalStateException(format("Tick is outside the range of Candle %s %s", batchCeiling, tick.getTimestamp()));
+        return tick;
+    }
+
+    private static Candle tickMapper(CandleSize duration, CurrencyPair pair, Tick tick) {
+        LOG.debug("Mapping %s %s %s inside %s", duration, pair, tick, Thread.currentThread().getName());
+        return new Candle(duration, pair, tick.getTimestamp(), tick.getMid(), tick.getMid(), tick.getMid(), tick.getMid(), 1);
+    }
+
+    private static Candle combiner(Candle c1, Candle c2) {
+        LOG.debug("Combining %s %s inside %s", c1, c2, Thread.currentThread().getName());
+        if (c1.duration != c2.duration)
+            throw new IllegalStateException("Cannot combine candles with different durations:" + c1 + " " + c2);
+
+        if (!c1.pair.getLabel().contentEquals(c2.pair.getLabel()))
+            throw new IllegalStateException("Cannot combine candles from different pairs:" + c1 + " " + c2);
+
+        boolean c1IsBefore = c1.timestamp.isBefore(c2.timestamp);
+        LocalDateTime timestamp = c1IsBefore ? c2.timestamp : c1.timestamp;
+        BigDecimal low = c1.low.min(c2.low);
+        BigDecimal open = c1IsBefore ? c1.open : c2.open;
+        BigDecimal high = c1.high.max(c2.high);
+        BigDecimal close = c1IsBefore ? c2.close : c1.close;
+        int tickCount = c1.tickCount + c2.tickCount;
+
+        return new Candle(c1.duration, c1.pair, timestamp, open, high, low, close, tickCount);
     }
 
     public Document toDocument() {
         Document result = new Document();
 
-        result.append("duration", duration);
+        result.append("duration", duration.getLabel());
         result.append("pair", pair);
         result.append("timestamp", FORMATTER.format(timestamp));
         result.append("open", open);
@@ -60,5 +95,37 @@ public class Candle {
         result.append("tick count", tickCount);
 
         return result;
+    }
+
+    public CandleSize getDuration() {
+        return duration;
+    }
+
+    public CurrencyPair getPair() {
+        return pair;
+    }
+
+    public LocalDateTime getTimestamp() {
+        return timestamp;
+    }
+
+    public BigDecimal getOpen() {
+        return open;
+    }
+
+    public BigDecimal getHigh() {
+        return high;
+    }
+
+    public BigDecimal getLow() {
+        return low;
+    }
+
+    public BigDecimal getClose() {
+        return close;
+    }
+
+    public int getTickCount() {
+        return tickCount;
     }
 }

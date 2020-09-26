@@ -16,16 +16,18 @@ public class Tick {
     private final LocalDateTime timestamp;
     private final BigDecimal bid;
     private final BigDecimal ask;
-    private BigDecimal mid;
+    private final BigDecimal mid;
 
     public Tick(@NonNull CSVRecord record) {
-        // assign first for Lombok error printing
         timestamp = LocalDateTime.parse(record.get(0), STR2DATE);
         ask = new BigDecimal(record.get(1).trim());
         bid = new BigDecimal(record.get(2).trim());
+        mid = getAsk()
+                .add(getBid())
+                .divide(BigDecimal.valueOf(2), 4, RoundingMode.HALF_EVEN);
 
         if (bid.compareTo(ask) > 0 || ask.compareTo(BigDecimal.ZERO) < 0 || bid.compareTo(BigDecimal.ZERO) < 0)
-            throw new IllegalArgumentException(this.toString());
+            throw new IllegalArgumentException(toString());
     }
 
     public LocalDateTime getTimestamp() {
@@ -41,12 +43,6 @@ public class Tick {
     }
 
     public BigDecimal getMid() {
-        // only calculate if called
-        if (mid == null) {
-            mid = getAsk()
-                    .add(getBid())
-                    .divide(BigDecimal.valueOf(2), 4, RoundingMode.HALF_EVEN);
-        }
         return mid;
     }
 }

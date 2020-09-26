@@ -33,7 +33,7 @@ public class TickLoader extends AbstractLoader {
     }
 
     @Override
-    protected void processRecords(CSVParser records, MongoCollection<Document> tickCollection, String pair) {
+    protected void processRecords(CSVParser records, MongoCollection<Document> tickCollection, CurrencyPair pair) {
         List<Document> documents = new ArrayList<>();
         int batchSize = Integer.parseInt(properties.getProperty(BATCH_SIZE));
         for (CSVRecord record : records) {

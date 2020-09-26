@@ -48,7 +48,7 @@ public class SMACalculator {
 
     public static void main(String[] args) {
         new SMACalculator(DatabaseFactory.create(PropertiesSingleton.getInstance()),
-                CandleDefinitions.FIVE_M,
+                CandleDefinitions.FIVE_MINUTES,
                 COMMON_SMAS).execute();
     }
 

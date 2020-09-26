@@ -16,19 +16,19 @@ public class CandleDefinitionsTest {
 
     @Test
     public void all() {
-        assertEquals(CandleDefinitions.FIVE_M.getFloor(LocalDateTime.parse("20200924 123100", formatter)),
+        assertEquals(CandleDefinitions.FIVE_MINUTES.getFloor(LocalDateTime.parse("20200924 123100", formatter)),
                 LocalDateTime.parse("20200924 123000", formatter));
 
-        assertEquals(CandleDefinitions.FIVE_M.getFloor(LocalDateTime.parse("20200924 123000", formatter)),
+        assertEquals(CandleDefinitions.FIVE_MINUTES.getFloor(LocalDateTime.parse("20200924 123000", formatter)),
                 LocalDateTime.parse("20200924 123000", formatter));
 
-        assertEquals(CandleDefinitions.FIVE_M.getFloor(LocalDateTime.parse("20200924 123005", formatter)),
+        assertEquals(CandleDefinitions.FIVE_MINUTES.getFloor(LocalDateTime.parse("20200924 123005", formatter)),
                 LocalDateTime.parse("20200924 123000", formatter));
 
-        assertEquals(CandleDefinitions.FIVE_M.getFloor(LocalDateTime.parse("20200924 123605", formatter)),
+        assertEquals(CandleDefinitions.FIVE_MINUTES.getFloor(LocalDateTime.parse("20200924 123605", formatter)),
                 LocalDateTime.parse("20200924 123500", formatter));
 
-        assertEquals(CandleDefinitions.FIVE_M.getFloor(LocalDateTime.parse("20200924 133605", formatter)),
+        assertEquals(CandleDefinitions.FIVE_MINUTES.getFloor(LocalDateTime.parse("20200924 133605", formatter)),
                 LocalDateTime.parse("20200924 133500", formatter));
     }
 }
