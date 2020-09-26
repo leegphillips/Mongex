@@ -40,8 +40,10 @@ public class Candle {
     }
 
     public static Candle create(@NonNull List<Tick> ticks, @NonNull CurrencyPair pair, @NonNull CandleSize tickSize, @NonNull LocalDateTime batchCeiling) {
-        if (ticks.stream().map(Tick::getTimestamp).distinct().count() != ticks.size())
-            throw new IllegalStateException(format("Candles must be created from a set of ticks with unique timestamps %s %s", pair, batchCeiling));
+        long uniqueTimestamps = ticks.stream().map(Tick::getTimestamp).distinct().count();
+        int totalTicks = ticks.size();
+        if (uniqueTimestamps != totalTicks)
+            LOG.warn(format("%d duplicate ticks found in %s %s", totalTicks - uniqueTimestamps, pair.getLabel(), batchCeiling));
 
         Candle candle = ticks.parallelStream()
                 .map(tick -> tickValidator(tick, batchCeiling))
@@ -59,12 +61,12 @@ public class Candle {
     }
 
     private static Candle tickMapper(CandleSize duration, CurrencyPair pair, Tick tick) {
-        LOG.debug("Mapping %s %s %s inside %s", duration, pair, tick, Thread.currentThread().getName());
+        LOG.trace(format("Mapping %s %s %s", duration, pair, tick));
         return new Candle(duration, pair, tick.getTimestamp(), tick.getMid(), tick.getMid(), tick.getMid(), tick.getMid(), 1);
     }
 
     private static Candle combiner(Candle c1, Candle c2) {
-        LOG.debug("Combining %s %s inside %s", c1, c2, Thread.currentThread().getName());
+        LOG.trace(format("Combining %s %s", c1, c2));
         if (c1.duration != c2.duration)
             throw new IllegalStateException("Cannot combine candles with different durations:" + c1 + " " + c2);
 
@@ -86,7 +88,7 @@ public class Candle {
         Document result = new Document();
 
         result.append("duration", duration.getLabel());
-        result.append("pair", pair);
+        result.append("pair", pair.getLabel());
         result.append("timestamp", FORMATTER.format(timestamp));
         result.append("open", open);
         result.append("high", high);

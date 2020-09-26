@@ -65,15 +65,6 @@ public class CandleTest {
         Candle.create(singletonList(tick1), pair, duration, time);
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void ticksMustHaveUniqueTimestamps() {
-        LocalDateTime base = LocalDateTime.now();
-        CandleSize duration = CandleSize.FIVE_MINUTES;
-        behave(tick1, null, base);
-        behave(tick2, null, base);
-        Candle.create(asList(tick1, tick2), pair, duration, base);
-    }
-
     @Test
     public void singleTickCandle() {
         LocalDateTime time = LocalDateTime.now();
