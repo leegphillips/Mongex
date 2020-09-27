@@ -4,11 +4,12 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
+@SuppressWarnings("unused")
 public class CandleDefinitions {
-    final static CandleSpecification ONE_M = new CandleSpecification() {
+    final static CandleSpecification ONE_MINUTE = new CandleSpecification() {
         @Override
-        public String getTickSize() {
-            return "1M";
+        public CandleSize getTickSize() {
+            return CandleSize.ONE_MINUTE;
         }
 
         @Override
@@ -20,12 +21,18 @@ public class CandleDefinitions {
         public LocalDateTime getCeiling(LocalDateTime floor) {
             return floor.plus(Duration.ofMinutes(1));
         }
+
+        @Override
+        public int getEventsPerDay() {
+            // not implemented
+            return 0;
+        }
     };
 
-    final static CandleSpecification FIVE_M = new CandleSpecification() {
+    final static CandleSpecification FIVE_MINUTES = new CandleSpecification() {
         @Override
-        public String getTickSize() {
-            return "5M";
+        public CandleSize getTickSize() {
+            return CandleSize.FIVE_MINUTES;
         }
 
         @Override
@@ -42,6 +49,11 @@ public class CandleDefinitions {
         @Override
         public LocalDateTime getCeiling(LocalDateTime floor) {
             return floor.plus(Duration.ofMinutes(5));
+        }
+
+        @Override
+        public int getEventsPerDay() {
+            return 24 * 60 / 5;
         }
     };
 }

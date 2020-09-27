@@ -50,7 +50,7 @@ public abstract class AbstractLoader {
             Reader fileReader = new FileReader(csvFile);
             BufferedReader bufferedFileReader = new BufferedReader(fileReader);
 
-            processRecords(CSVFormat.DEFAULT.parse(bufferedFileReader), tickCollection, getPair(csvFile));
+            processRecords(CSVFormat.DEFAULT.parse(bufferedFileReader), tickCollection, new CurrencyPair(getPair(csvFile)));
 
             bufferedFileReader.close();
             fileReader.close();
@@ -65,7 +65,7 @@ public abstract class AbstractLoader {
         return db.getCollection(getPair(csvFile) + getNamespace());
     }
 
-    protected abstract void processRecords(CSVParser records, MongoCollection<Document> tickCollection, String pair) throws IOException, ParseException;
+    protected abstract void processRecords(CSVParser records, MongoCollection<Document> tickCollection, CurrencyPair pair) throws IOException, ParseException;
 
     protected abstract String getNamespace();
 

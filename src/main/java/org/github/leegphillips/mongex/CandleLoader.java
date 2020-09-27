@@ -20,9 +20,7 @@ import java.util.Properties;
 
 public class CandleLoader extends AbstractLoader {
     public static final String COLLECTION_NAME = "CANDLES";
-    private static final Logger log = LoggerFactory.getLogger(CandleLoader.class);
-    private static final CandleFactory CANDLE_FACTORY = new CandleFactory();
-
+    private static final Logger LOG = LoggerFactory.getLogger(CandleLoader.class);
     private static final DateTimeFormatter STR2DATE = DateTimeFormatter.ofPattern("yyyyMMdd HHmmssSSS");
 
     private final CandleSpecification candleSpecification;
@@ -37,15 +35,17 @@ public class CandleLoader extends AbstractLoader {
         MongoDatabase db = DatabaseFactory.create(properties);
         ZipExtractor extractor = new ZipExtractor();
         DocumentFactory df = new DocumentFactory();
-        new CandleLoader(properties, db, extractor, df, CandleDefinitions.FIVE_M).execute();
+        new CandleLoader(properties, db, extractor, df, CandleDefinitions.FIVE_MINUTES).execute();
     }
 
     @Override
-    protected void processRecords(CSVParser records, MongoCollection<Document> tickCollection, String pair) {
+    protected void processRecords(CSVParser records, MongoCollection<Document> tickCollection, CurrencyPair pair) {
         List<Document> candles = new ArrayList<>();
-        List<CSVRecord> batch = new ArrayList<>();
+        List<Tick> batch = new ArrayList<>();
         LocalDateTime batchFloor = null;
         LocalDateTime batchCeiling = null;
+        CandleSize tickSize = candleSpecification.getTickSize();
+
         for (CSVRecord record : records) {
             LocalDateTime time = LocalDateTime.parse(record.get(0), STR2DATE);
             if (batchFloor == null) {
@@ -54,16 +54,17 @@ public class CandleLoader extends AbstractLoader {
             }
 
             if (!time.isBefore(batchCeiling)) {
-                candles.add(CANDLE_FACTORY.create(batch, pair, candleSpecification.getTickSize(), batchCeiling));
+                candles.add(Candle.create(batch, pair, tickSize, batchCeiling).toDocument());
                 batch = new ArrayList<>();
                 batchFloor = candleSpecification.getFloor(time);
                 batchCeiling = candleSpecification.getCeiling(batchFloor);
             }
-            batch.add(record);
+            batch.add(Tick.create(record));
         }
-        candles.add(CANDLE_FACTORY.create(batch, pair, candleSpecification.getTickSize(), batchCeiling));
-        log.info("Adding " + candles.size() + " candles");
+        candles.add(Candle.create(batch, pair, tickSize, batchCeiling).toDocument());
+
         tickCollection.insertMany(candles);
+        LOG.info("Adding " + candles.size() + " candles");
     }
 
     @Override

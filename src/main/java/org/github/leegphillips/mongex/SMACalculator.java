@@ -3,6 +3,7 @@ package org.github.leegphillips.mongex;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
+import lombok.NonNull;
 import org.bson.Document;
 import org.bson.types.Decimal128;
 import org.slf4j.Logger;
@@ -21,28 +22,36 @@ public class SMACalculator {
 
     private static final String COLLECTION_NAME = "SMA's";
     private static final int[] COMMON_SMAS = new int[]{10, 20, 50, 100, 200};
-    private static final int WINDOW_SIZE = COMMON_SMAS[COMMON_SMAS.length - 1];
 
     private final MongoDatabase db;
+    private final int[] sMAS;
 
-    public SMACalculator(MongoDatabase db) {
+    private final int windowSize;
+
+    public SMACalculator(@NonNull MongoDatabase db, @NonNull CandleSpecification specification, @NonNull int[] sMAS) {
         this.db = db;
+        this.sMAS = sMAS;
+
+        if (sMAS.length == 0)
+            throw new IllegalArgumentException("SMA's cannot be empty");
 
         // it is essential that this array is sorted
-        for (int i = 1, last = COMMON_SMAS[0]; i <= COMMON_SMAS.length - 1; i++) {
-            int current = COMMON_SMAS[i];
-            if (last > current) {
-                throw new IllegalStateException("COMMON_SMAS must be ordered lowest to highest");
-            }
+        for (int i = 1, last = sMAS[0]; i <= sMAS.length - 1; i++) {
+            int current = sMAS[i];
+            if (last > current)
+                throw new IllegalArgumentException("SMA's must be ordered lowest to highest");
             last = current;
         }
+
+        windowSize = sMAS[sMAS.length - 1] * specification.getEventsPerDay();
     }
 
     public static void main(String[] args) {
-        new SMACalculator(DatabaseFactory.create(PropertiesSingleton.getInstance())).execute();
+        new SMACalculator(DatabaseFactory.create(PropertiesSingleton.getInstance()),
+                CandleDefinitions.FIVE_MINUTES,
+                COMMON_SMAS).execute();
     }
 
-    // this could be optimised to fetch more than one day at a time
     private void execute() {
         long start = System.currentTimeMillis();
         MongoCollection<Document> candles = db.getCollection(CandleLoader.COLLECTION_NAME);
@@ -57,7 +66,7 @@ public class SMACalculator {
 
         for (String pair : pairs) {
             LOG.info("Processing: " + pair);
-            ArrayDeque<BigDecimal> window = new ArrayDeque<>(WINDOW_SIZE);
+            ArrayDeque<BigDecimal> window = new ArrayDeque<>(windowSize);
             List<Document> result = new ArrayList<>();
 
             MongoCursor<Document> cursor = candles.find(new Document("pair", pair)).sort(new Document("date", 1)).cursor();
@@ -72,14 +81,14 @@ public class SMACalculator {
                         .add(candle.get("low", Decimal128.class).bigDecimalValue())
                         .divide(BigDecimal.valueOf(2), RoundingMode.HALF_EVEN));
 
-                if (window.size() > WINDOW_SIZE) {
+                if (window.size() > windowSize) {
                     window.removeLast();
                 }
 
                 // need array access
                 BigDecimal[] windowSnapshot = window.toArray(new BigDecimal[]{});
 
-                for (int currentSMA : COMMON_SMAS) {
+                for (int currentSMA : sMAS) {
                     if (windowSnapshot.length >= currentSMA) {
                         BigDecimal runningTotal = BigDecimal.ZERO;
                         for (int i = 0; i < currentSMA; i++) {
