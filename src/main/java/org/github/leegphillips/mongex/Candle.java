@@ -3,6 +3,7 @@ package org.github.leegphillips.mongex;
 import lombok.NonNull;
 import lombok.ToString;
 import org.bson.Document;
+import org.bson.types.Decimal128;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,9 +18,17 @@ import static java.lang.String.format;
 public class Candle {
     private static final Logger LOG = LoggerFactory.getLogger(Candle.class);
 
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-
-    private final CandleSize duration;
+    public static final String TIMESTAMP_ATTR_NAME = "timestamp";
+    public static final String OPEN_ATTR_NAME = "open";
+    public static final String HIGH_ATTR_NAME = "high";
+    public static final String LOW_ATTR_NAME = "low";
+    public static final String CLOSE_ATTR_NAME = "close";
+    public static final String TICK_COUNT_ATTR_NAME = "tick count";
+    public static final String ERROR_COUNT_ATTR_NAME = "error count";
+    public static final String DUPLICATES_COUNT_ATTR_NAME = "duplicates count";
+    public static final String INVERSION_COUNT_ATTR_NAME = "inversion count";
+    private static final DateTimeFormatter STR2DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private final TimeFrame duration;
     private final CurrencyPair pair;
     private final LocalDateTime timestamp;
     private final BigDecimal open;
@@ -28,11 +37,11 @@ public class Candle {
     private final BigDecimal close;
     private final int tickCount;
     private final int errorCount;
-    private final long duplicatesCount;
+    private final int inversionCount;
+    private final int duplicatesCount;
 
-
-    private Candle(CandleSize duration, CurrencyPair pair, LocalDateTime timestamp, BigDecimal open, BigDecimal high,
-                   BigDecimal low, BigDecimal close, int tickCount, long duplicatesCount, int errorCount) {
+    private Candle(TimeFrame duration, CurrencyPair pair, LocalDateTime timestamp, BigDecimal open, BigDecimal high,
+                   BigDecimal low, BigDecimal close, int tickCount, int duplicatesCount, int errorCount, int inversionCount) {
         this.duration = duration;
         this.pair = pair;
         this.timestamp = timestamp;
@@ -43,11 +52,12 @@ public class Candle {
         this.tickCount = tickCount;
         this.duplicatesCount = duplicatesCount;
         this.errorCount = errorCount;
+        this.inversionCount = inversionCount;
     }
 
     public static Candle create(@NonNull List<Tick> ticks, @NonNull CurrencyPair pair,
-                                @NonNull CandleSize tickSize, @NonNull LocalDateTime batchCeiling) {
-        long duplicates = ticks.size() - ticks.stream().map(Tick::getTimestamp).distinct().count();
+                                @NonNull TimeFrame tickSize, @NonNull LocalDateTime batchCeiling) {
+        int duplicates = ticks.size() - (int) ticks.stream().map(Tick::getTimestamp).distinct().count();
 
         Candle candle = ticks.parallelStream()
                 .map(tick -> tickValidator(tick, batchCeiling))
@@ -56,7 +66,23 @@ public class Candle {
                 .orElseThrow(() -> new IllegalStateException(format("Candles need at least one tick %s %s %s", pair.getLabel(), ticks.size(), batchCeiling)));
 
         return new Candle(candle.duration, candle.pair, batchCeiling, candle.open, candle.high, candle.low,
-                candle.close, candle.tickCount, duplicates, candle.errorCount);
+                candle.close, candle.tickCount, duplicates, candle.errorCount, candle.inversionCount);
+    }
+
+    public static Candle create(@NonNull Document doc) {
+        TimeFrame timeframe = TimeFrame.get(doc.getString(TimeFrame.ATTR_NAME));
+        CurrencyPair pair = new CurrencyPair(doc.getString(CurrencyPair.ATTR_NAME));
+        LocalDateTime timestamp = LocalDateTime.parse(doc.getString(TIMESTAMP_ATTR_NAME), STR2DATE);
+        BigDecimal open = doc.get(OPEN_ATTR_NAME, Decimal128.class).bigDecimalValue();
+        BigDecimal high = doc.get(HIGH_ATTR_NAME, Decimal128.class).bigDecimalValue();
+        BigDecimal low = doc.get(LOW_ATTR_NAME, Decimal128.class).bigDecimalValue();
+        BigDecimal close = doc.get(CLOSE_ATTR_NAME, Decimal128.class).bigDecimalValue();
+        int tickCount = doc.getInteger(TICK_COUNT_ATTR_NAME);
+        int duplicatesCount = doc.getInteger(DUPLICATES_COUNT_ATTR_NAME);
+        int errorCount = doc.getInteger(ERROR_COUNT_ATTR_NAME);
+        int inversionCount = doc.getInteger(INVERSION_COUNT_ATTR_NAME);
+
+        return new Candle(timeframe, pair, timestamp, open, high, low, close, tickCount, duplicatesCount, errorCount, inversionCount);
     }
 
     private static Tick tickValidator(Tick tick, LocalDateTime batchCeiling) {
@@ -65,9 +91,9 @@ public class Candle {
         return tick;
     }
 
-    private static Candle tickMapper(CandleSize duration, CurrencyPair pair, Tick tick) {
+    private static Candle tickMapper(TimeFrame duration, CurrencyPair pair, Tick tick) {
         return new Candle(duration, pair, tick.getTimestamp(), tick.getMid(), tick.getMid(), tick.getMid(), tick.getMid(),
-                1, 0, tick.isError() ? 1 : 0);
+                1, 0, tick.isError() ? 1 : 0, tick.isInverted() ? 1 : 0);
     }
 
     private static Candle combiner(Candle c1, Candle c2) {
@@ -86,31 +112,33 @@ public class Candle {
         LocalDateTime timestamp = c1IsBefore ? c2.timestamp : c1.timestamp;
         BigDecimal open = timestampCollision || c1IsBefore ? c1.open : c2.open;
         BigDecimal close = timestampCollision ? c1.close : c1IsBefore ? c2.close : c1.close;
-        long duplicates = c1.duplicatesCount + c2.duplicatesCount;
+        int duplicates = c1.duplicatesCount + c2.duplicatesCount;
         if (timestampCollision)
             duplicates++;
+        int inversionCount = c1.inversionCount + c2.inversionCount;
 
-        return new Candle(c1.duration, c1.pair, timestamp, open, high, low, close, tickCount, duplicates, errorCount);
+        return new Candle(c1.duration, c1.pair, timestamp, open, high, low, close, tickCount, duplicates, errorCount, inversionCount);
     }
 
     public Document toDocument() {
         Document result = new Document();
 
-        result.append("duration", duration.getLabel());
-        result.append("pair", pair.getLabel());
-        result.append("timestamp", FORMATTER.format(timestamp));
-        result.append("open", open);
-        result.append("high", high);
-        result.append("low", low);
-        result.append("close", close);
-        result.append("tick count", tickCount);
-        result.append("duplicate count", duplicatesCount);
-        result.append("error count", errorCount);
+        result.append(TimeFrame.ATTR_NAME, duration.getLabel());
+        result.append(CurrencyPair.ATTR_NAME, pair.getLabel());
+        result.append(Timestamp.ATTR_NAME, Timestamp.format(timestamp));
+        result.append(OPEN_ATTR_NAME, open);
+        result.append(HIGH_ATTR_NAME, high);
+        result.append(LOW_ATTR_NAME, low);
+        result.append(CLOSE_ATTR_NAME, close);
+        result.append(TICK_COUNT_ATTR_NAME, tickCount);
+        result.append(DUPLICATES_COUNT_ATTR_NAME, duplicatesCount);
+        result.append(ERROR_COUNT_ATTR_NAME, errorCount);
+        result.append(INVERSION_COUNT_ATTR_NAME, inversionCount);
 
         return result;
     }
 
-    public CandleSize getDuration() {
+    public TimeFrame getDuration() {
         return duration;
     }
 
@@ -148,5 +176,9 @@ public class Candle {
 
     public int getErrorCount() {
         return errorCount;
+    }
+
+    public int getInversionCount() {
+        return inversionCount;
     }
 }
