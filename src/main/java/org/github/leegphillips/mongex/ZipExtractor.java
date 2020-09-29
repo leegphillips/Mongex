@@ -20,7 +20,7 @@ public class ZipExtractor {
         byte[] buffer = new byte[BUFFER_SIZE];
         while (zipEntry != null) {
             if (zipEntry.getName().endsWith(CSV_SUFFIX)) {
-                LOG.info(zipEntry.getName());
+                LOG.debug(zipEntry.getName());
                 csvFile = File.createTempFile(zipEntry.getName(), CSV_SUFFIX);
                 FileOutputStream fos = new FileOutputStream(csvFile);
                 int len;

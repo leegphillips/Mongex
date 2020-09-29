@@ -22,7 +22,7 @@ public class PropertiesSingleton {
     public static Properties getInstance() {
         if (INSTANCE == null) {
             INSTANCE = new Properties();
-            try (InputStream input = AbstractLoader.class.getClassLoader().getResourceAsStream("config.properties")) {
+            try (InputStream input = PropertiesSingleton.class.getClassLoader().getResourceAsStream("config.properties")) {
                 INSTANCE.load(input);
                 log.info("Properties loaded successfully.", INSTANCE);
             } catch (IOException e) {

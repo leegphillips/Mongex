@@ -2,44 +2,104 @@ package org.github.leegphillips.mongex;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.Indexes;
+import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.text.ParseException;
+import java.io.*;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class CandleLoader extends AbstractLoader {
+import static com.mongodb.client.model.Indexes.ascending;
+import static java.util.Comparator.comparing;
+import static org.github.leegphillips.mongex.PropertiesSingleton.SOURCE_DIR;
+
+public class CandleLoader {
     public static final String COLLECTION_NAME = "CANDLES";
-    private static final Logger LOG = LoggerFactory.getLogger(CandleLoader.class);
-    private static final DateTimeFormatter STR2DATE = DateTimeFormatter.ofPattern("yyyyMMdd HHmmssSSS");
 
+    private static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(10);
+
+    private static final Logger LOG = LoggerFactory.getLogger(CandleLoader.class);
+
+    private final Properties properties;
+    private final MongoDatabase db;
+    private final ZipExtractor extractor;
     private final CandleSpecification candleSpecification;
 
-    public CandleLoader(Properties properties, MongoDatabase db, ZipExtractor extractor, DocumentFactory df, CandleSpecification candleSpecification) {
-        super(properties, db, extractor, df);
+    public CandleLoader(Properties properties, MongoDatabase db, ZipExtractor extractor, CandleSpecification candleSpecification) {
+        this.properties = properties;
+        this.db = db;
+        this.extractor = extractor;
         this.candleSpecification = candleSpecification;
     }
 
-    public static void main(String[] args) throws IOException, ParseException {
+    public static void main(String[] args) throws IOException, ExecutionException, InterruptedException {
         Properties properties = PropertiesSingleton.getInstance();
         MongoDatabase db = DatabaseFactory.create(properties);
-        ZipExtractor extractor = new ZipExtractor();
-        DocumentFactory df = new DocumentFactory();
-        new CandleLoader(properties, db, extractor, df, CandleDefinitions.FIVE_MINUTES).execute();
+        new CandleLoader(properties, db, new ZipExtractor(), CandleDefinitions.FIVE_MINUTES).execute();
     }
 
-    @Override
-    protected void processRecords(CSVParser records, MongoCollection<Document> tickCollection, CurrencyPair pair) {
+    private void execute() throws IOException, ExecutionException, InterruptedException {
+        long start = System.currentTimeMillis();
+
+        MongoCollection<Document> candlesCollection = db.getCollection(COLLECTION_NAME);
+        candlesCollection.createIndex(ascending(CurrencyPair.ATTR_NAME));
+        candlesCollection.createIndex(ascending(TimeFrame.ATTR_NAME));
+        candlesCollection.createIndex(ascending(Candle.TIMESTAMP_ATTR_NAME));
+
+        File[] files = new File(properties.getProperty(SOURCE_DIR)).listFiles();
+        Arrays.sort(files, comparing(File::getName));
+        LOG.info("Loading " + files.length + " files");
+
+        AtomicInteger counter = new AtomicInteger(files.length);
+        Collection<Future<?>> futures = new LinkedList<Future<?>>();
+        for (File file : files) {
+            Future<?> processing = THREAD_POOL.submit(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        processFile(file, candlesCollection, counter);
+                    } catch (IOException e) {
+                        LOG.error(file.getName(), e);
+                    }
+                }
+            });
+            futures.add(processing);
+        }
+
+        for (Future<?> processing : futures) {
+            processing.get();
+        }
+        LOG.info(files.length + " loaded in " + (System.currentTimeMillis() - start) + "ms");
+    }
+
+    private void processFile(File file, MongoCollection<Document> candlesCollection, AtomicInteger counter) throws IOException {
+        long start = System.currentTimeMillis();
+        CurrencyPair pair = new CurrencyPair(file.getName().substring(10, 16));
+
+        File csvFile = extractor.extractCSV(file);
+        Reader fileReader = new FileReader(csvFile);
+        BufferedReader bufferedFileReader = new BufferedReader(fileReader);
+
+        List<Document> candles = processRecords(CSVFormat.DEFAULT.parse(bufferedFileReader), pair);
+        candlesCollection.insertMany(candles);
+
+        bufferedFileReader.close();
+        fileReader.close();
+
+        csvFile.delete();
+        LOG.info(file.getName() + " " + candles.size() + " candles " + (System.currentTimeMillis() - start) + "ms Remaining: " + counter.decrementAndGet());
+    }
+
+    private List<Document> processRecords(CSVParser records, CurrencyPair pair) {
         List<Document> candles = new ArrayList<>();
         List<Tick> batch = new ArrayList<>();
         LocalDateTime batchFloor = null;
@@ -47,9 +107,10 @@ public class CandleLoader extends AbstractLoader {
         TimeFrame tickSize = candleSpecification.getTickSize();
 
         for (CSVRecord record : records) {
-            LocalDateTime time = LocalDateTime.parse(record.get(0), STR2DATE);
+            Tick tick = Tick.create(record);
+            LocalDateTime time = tick.getTimestamp();
             if (batchFloor == null) {
-                batchFloor = candleSpecification.getFloor(time);
+                batchFloor = candleSpecification.getFloor(tick.getTimestamp());
                 batchCeiling = candleSpecification.getCeiling(batchFloor);
             }
 
@@ -63,24 +124,6 @@ public class CandleLoader extends AbstractLoader {
         }
         candles.add(Candle.create(batch, pair, tickSize, batchCeiling).toDocument());
 
-        tickCollection.insertMany(candles);
-        LOG.info("Adding " + candles.size() + " candles");
-    }
-
-    @Override
-    protected String getNamespace() {
-        return "_CANDLES";
-    }
-
-    @Override
-    protected MongoCollection<Document> getCollection(File csvFile) {
-        MongoCollection<Document> collection = db.getCollection(COLLECTION_NAME);
-
-        // mongo only creates if one isn't already there - so presumably double calling is fine
-        collection.createIndex(Indexes.ascending("pair"));
-        collection.createIndex(Indexes.ascending("duration"));
-        collection.createIndex(Indexes.ascending("timestamp"));
-
-        return collection;
+        return candles;
     }
 }
