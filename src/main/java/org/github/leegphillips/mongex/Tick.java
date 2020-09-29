@@ -19,11 +19,13 @@ public class Tick {
     private final BigDecimal ask;
     private final BigDecimal mid;
     private final boolean error;
+    private final boolean inverted;
 
     private Tick(LocalDateTime timestamp, BigDecimal bid, BigDecimal ask) {
         this.timestamp = timestamp;
-        this.bid = bid;
-        this.ask = ask;
+        this.inverted = bid.compareTo(ask) > 0;
+        this.bid = inverted ? ask : bid;
+        this.ask = inverted ? bid : ask;
         this.mid = ask.add(bid).divide(BigDecimal.valueOf(2), 4, RoundingMode.HALF_EVEN);
         this.error = ask.compareTo(BigDecimal.ZERO) < 0 || bid.compareTo(BigDecimal.ZERO) < 0;
     }
@@ -33,14 +35,6 @@ public class Tick {
         BigDecimal ask = new BigDecimal(record.get(1).trim());
         BigDecimal bid = new BigDecimal(record.get(2).trim());
         return new Tick(timestamp, bid, ask);
-
-// the data seems to have an issue whereby the bid and ask get swapped often
-// we don't care too much about this because we are interested in the generated mid only
-// assuming the values are correct by in the wrong place, we can ignore this check
-//        if (tick.bid.compareTo(tick.ask) > 0) {
-//            LOG.warn(String.format("%s bid greater than ask %s %s", tick.timestamp, tick.bid, tick.ask));
-//            failed = true;
-//        }
     }
 
     public LocalDateTime getTimestamp() {
@@ -61,5 +55,9 @@ public class Tick {
 
     public boolean isError() {
         return error;
+    }
+
+    public boolean isInverted() {
+        return inverted;
     }
 }

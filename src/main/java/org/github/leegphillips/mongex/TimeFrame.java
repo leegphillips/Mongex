@@ -1,10 +1,14 @@
 package org.github.leegphillips.mongex;
 
+import lombok.NonNull;
 import lombok.ToString;
+
+import java.util.Arrays;
+import java.util.Optional;
 
 @SuppressWarnings("unused")
 @ToString
-public enum CandleSize {
+public enum TimeFrame {
     FIVE_SECONDS("5s"),
     TEN_SECONDS("10s"),
     THIRTY_SECONDS("30s"),
@@ -21,13 +25,25 @@ public enum CandleSize {
     ONE_WEEK("1W"),
     ONE_MONTH("1M");
 
+    public static final String ATTR_NAME = "timeframe";
+
     private final String label;
 
-    CandleSize(String label) {
+    TimeFrame(String label) {
         this.label = label;
     }
 
     public String getLabel() {
         return label;
+    }
+
+    // :(
+    public static TimeFrame get(@NonNull String label) {
+        Optional<TimeFrame> t = Arrays.stream(TimeFrame.class.getEnumConstants())
+                .filter(tf -> tf.label.equals(label))
+                .findFirst();
+        if (t.isPresent())
+            return t.get();
+        throw new IllegalArgumentException("Searching for an non-existent value: " + label);
     }
 }

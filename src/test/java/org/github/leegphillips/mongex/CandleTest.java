@@ -34,12 +34,12 @@ public class CandleTest {
 
     @Test(expected = NullPointerException.class)
     public void cannotCreatWithNullTicks() {
-        Candle.create(null, pair, CandleSize.FIVE_MINUTES, LocalDateTime.now());
+        Candle.create(null, pair, TimeFrame.FIVE_MINUTES, LocalDateTime.now());
     }
 
     @Test(expected = NullPointerException.class)
     public void cannotCreatWithNullPair() {
-        Candle.create(batch, null, CandleSize.FIVE_MINUTES, LocalDateTime.now());
+        Candle.create(batch, null, TimeFrame.FIVE_MINUTES, LocalDateTime.now());
     }
 
     @Test(expected = NullPointerException.class)
@@ -49,18 +49,18 @@ public class CandleTest {
 
     @Test(expected = NullPointerException.class)
     public void cannotCreatWithNullBatchCeiling() {
-        Candle.create(batch, pair, CandleSize.FIVE_MINUTES, null);
+        Candle.create(batch, pair, TimeFrame.FIVE_MINUTES, null);
     }
 
     @Test(expected = IllegalStateException.class)
     public void cannotCreateEmptyCandle() {
-        Candle.create(emptyList(), pair, CandleSize.FIVE_MINUTES, LocalDateTime.now());
+        Candle.create(emptyList(), pair, TimeFrame.FIVE_MINUTES, LocalDateTime.now());
     }
 
     @Test(expected = IllegalStateException.class)
     public void tickCannotBeAfterCandle() {
         LocalDateTime time = LocalDateTime.now();
-        CandleSize duration = CandleSize.FIVE_MINUTES;
+        TimeFrame duration = TimeFrame.FIVE_MINUTES;
         behave(tick1, BigDecimal.ONE, time.plusHours(1));
         Candle.create(singletonList(tick1), pair, duration, time);
     }
@@ -69,41 +69,41 @@ public class CandleTest {
     public void singleTickCandle() {
         LocalDateTime time = LocalDateTime.now();
         BigDecimal mid = BigDecimal.ONE;
-        CandleSize duration = CandleSize.FIVE_MINUTES;
+        TimeFrame duration = TimeFrame.FIVE_MINUTES;
         behave(tick1, mid, time);
         Candle candle = Candle.create(singletonList(tick1), pair, duration, time);
-        verifyCandle(candle, duration, pair, time, mid, mid, mid, mid, 1, 0, 0);
+        verifyCandle(candle, duration, pair, time, mid, mid, mid, mid, 1, 0, 0, 0);
     }
 
     @Test
     public void singleTickCandleWithError() {
         LocalDateTime time = LocalDateTime.now();
         BigDecimal mid = BigDecimal.ONE;
-        CandleSize duration = CandleSize.FIVE_MINUTES;
+        TimeFrame duration = TimeFrame.FIVE_MINUTES;
         behave(tick1, mid, time);
         when(tick1.isError()).thenReturn(true);
         Candle candle = Candle.create(singletonList(tick1), pair, duration, time);
-        verifyCandle(candle, duration, pair, time, mid, mid, mid, mid, 1, 0, 1);
+        verifyCandle(candle, duration, pair, time, mid, mid, mid, mid, 1, 0, 1, 0);
     }
 
     @Test
     public void doubleTickCandleRising() {
         LocalDateTime base = LocalDateTime.now();
         BigDecimal mid = BigDecimal.ONE;
-        CandleSize duration = CandleSize.FIVE_MINUTES;
+        TimeFrame duration = TimeFrame.FIVE_MINUTES;
         behave(tick1, mid, base);
         LocalDateTime later = base.plusHours(1);
         BigDecimal up = mid.add(BigDecimal.ONE);
         behave(tick2, up, later);
         Candle candle = Candle.create(asList(tick1, tick2), pair, duration, later);
-        verifyCandle(candle, duration, pair, later, mid, up, mid, up, 2, 0, 0);
+        verifyCandle(candle, duration, pair, later, mid, up, mid, up, 2, 0, 0, 0);
     }
 
     @Test
     public void doubleTickCandleRisingWithError() {
         LocalDateTime base = LocalDateTime.now();
         BigDecimal mid = BigDecimal.ONE;
-        CandleSize duration = CandleSize.FIVE_MINUTES;
+        TimeFrame duration = TimeFrame.FIVE_MINUTES;
         behave(tick1, mid, base);
         when(tick1.isError()).thenReturn(true);
         LocalDateTime later = base.plusHours(1);
@@ -111,41 +111,41 @@ public class CandleTest {
         behave(tick2, up, later);
         when(tick2.isError()).thenReturn(true);
         Candle candle = Candle.create(asList(tick1, tick2), pair, duration, later);
-        verifyCandle(candle, duration, pair, later, mid, up, mid, up, 2, 0, 2);
+        verifyCandle(candle, duration, pair, later, mid, up, mid, up, 2, 0, 2, 0);
     }
 
     @Test
     public void doubleTickCandleFalling() {
         LocalDateTime base = LocalDateTime.now();
         BigDecimal mid = BigDecimal.ONE;
-        CandleSize duration = CandleSize.FIVE_MINUTES;
+        TimeFrame duration = TimeFrame.FIVE_MINUTES;
         behave(tick1, mid, base);
         LocalDateTime later = base.plusHours(1);
         BigDecimal down = mid.subtract(new BigDecimal("0.5"));
         behave(tick2, down, later);
         Candle candle = Candle.create(asList(tick1, tick2), pair, duration, later);
-        verifyCandle(candle, duration, pair, later, mid, mid, down, down, 2, 0, 0);
+        verifyCandle(candle, duration, pair, later, mid, mid, down, down, 2, 0, 0, 0);
     }
 
     @Test
     public void tripleTickCandleStraightLine() {
         LocalDateTime base = LocalDateTime.now();
         BigDecimal mid = BigDecimal.ONE;
-        CandleSize duration = CandleSize.FIVE_MINUTES;
+        TimeFrame duration = TimeFrame.FIVE_MINUTES;
         behave(tick1, mid, base);
         LocalDateTime later = base.plusHours(1);
         behave(tick2, mid, later);
         LocalDateTime evenLater = later.plusHours(1);
         behave(tick3, mid, evenLater);
         Candle candle = Candle.create(asList(tick1, tick2, tick3), pair, duration, evenLater);
-        verifyCandle(candle, duration, pair, evenLater, mid, mid, mid, mid, 3, 0, 0);
+        verifyCandle(candle, duration, pair, evenLater, mid, mid, mid, mid, 3, 0, 0, 0);
     }
 
     @Test
     public void tripleTickCandleAscending() {
         LocalDateTime base = LocalDateTime.now();
         BigDecimal mid = BigDecimal.ONE;
-        CandleSize duration = CandleSize.FIVE_MINUTES;
+        TimeFrame duration = TimeFrame.FIVE_MINUTES;
         behave(tick1, mid, base);
         LocalDateTime later = base.plusHours(1);
         BigDecimal mid2 = mid.add(BigDecimal.ONE);
@@ -154,14 +154,14 @@ public class CandleTest {
         BigDecimal mid3 = mid2.add(BigDecimal.ONE);
         behave(tick3, mid3, evenLater);
         Candle candle = Candle.create(asList(tick1, tick2, tick3), pair, duration, evenLater);
-        verifyCandle(candle, duration, pair, evenLater, mid, mid3, mid, mid3, 3, 0, 0);
+        verifyCandle(candle, duration, pair, evenLater, mid, mid3, mid, mid3, 3, 0, 0, 0);
     }
 
     @Test
     public void tripleTickCandleDescending() {
         LocalDateTime base = LocalDateTime.now();
         BigDecimal mid = BigDecimal.ONE;
-        CandleSize duration = CandleSize.FIVE_MINUTES;
+        TimeFrame duration = TimeFrame.FIVE_MINUTES;
         behave(tick1, mid, base);
         LocalDateTime later = base.plusHours(1);
         BigDecimal mid2 = mid.subtract(new BigDecimal("0.5"));
@@ -170,14 +170,14 @@ public class CandleTest {
         BigDecimal mid3 = mid2.subtract(new BigDecimal("0.25"));
         behave(tick3, mid3, evenLater);
         Candle candle = Candle.create(asList(tick1, tick2, tick3), pair, duration, evenLater);
-        verifyCandle(candle, duration, pair, evenLater, mid, mid, mid3, mid3, 3, 0, 0);
+        verifyCandle(candle, duration, pair, evenLater, mid, mid, mid3, mid3, 3, 0, 0, 0);
     }
 
     @Test
     public void tripleTickCandleMidMax() {
         LocalDateTime base = LocalDateTime.now();
         BigDecimal mid = BigDecimal.ONE;
-        CandleSize duration = CandleSize.FIVE_MINUTES;
+        TimeFrame duration = TimeFrame.FIVE_MINUTES;
         behave(tick1, mid, base);
         LocalDateTime later = base.plusHours(1);
         BigDecimal mid2 = mid.add(new BigDecimal("0.5"));
@@ -186,14 +186,14 @@ public class CandleTest {
         BigDecimal mid3 = mid.add(new BigDecimal("0.25"));
         behave(tick3, mid3, evenLater);
         Candle candle = Candle.create(asList(tick1, tick2, tick3), pair, duration, evenLater);
-        verifyCandle(candle, duration, pair, evenLater, mid, mid2, mid, mid3, 3, 0, 0);
+        verifyCandle(candle, duration, pair, evenLater, mid, mid2, mid, mid3, 3, 0, 0, 0);
     }
 
     @Test
     public void tripleTickCandleMidMin() {
         LocalDateTime base = LocalDateTime.now();
         BigDecimal mid = BigDecimal.ONE;
-        CandleSize duration = CandleSize.FIVE_MINUTES;
+        TimeFrame duration = TimeFrame.FIVE_MINUTES;
         behave(tick1, mid, base);
         LocalDateTime later = base.plusHours(1);
         BigDecimal mid2 = mid.subtract(new BigDecimal("0.5"));
@@ -202,14 +202,14 @@ public class CandleTest {
         BigDecimal mid3 = mid.add(new BigDecimal("0.25"));
         behave(tick3, mid3, evenLater);
         Candle candle = Candle.create(asList(tick1, tick2, tick3), pair, duration, evenLater);
-        verifyCandle(candle, duration, pair, evenLater, mid, mid3, mid2, mid3, 3, 0, 0);
+        verifyCandle(candle, duration, pair, evenLater, mid, mid3, mid2, mid3, 3, 0, 0, 0);
     }
 
     @Test
     public void tripleTickCandleMidMinWithTwoErrors() {
         LocalDateTime base = LocalDateTime.now();
         BigDecimal mid = BigDecimal.ONE;
-        CandleSize duration = CandleSize.FIVE_MINUTES;
+        TimeFrame duration = TimeFrame.FIVE_MINUTES;
         behave(tick1, mid, base);
         when(tick1.isError()).thenReturn(true);
         LocalDateTime later = base.plusHours(1);
@@ -220,21 +220,39 @@ public class CandleTest {
         behave(tick3, mid3, evenLater);
         when(tick3.isError()).thenReturn(true);
         Candle candle = Candle.create(asList(tick1, tick2, tick3), pair, duration, evenLater);
-        verifyCandle(candle, duration, pair, evenLater, mid, mid3, mid2, mid3, 3, 0, 2);
+        verifyCandle(candle, duration, pair, evenLater, mid, mid3, mid2, mid3, 3, 0, 2, 0);
+    }
+
+    @Test
+    public void tripleTickCandleWithTwoInversions() {
+        LocalDateTime base = LocalDateTime.now();
+        BigDecimal mid = BigDecimal.ONE;
+        TimeFrame duration = TimeFrame.FIVE_MINUTES;
+        behave(tick1, mid, base);
+        when(tick1.isInverted()).thenReturn(true);
+        LocalDateTime later = base.plusHours(1);
+        BigDecimal mid2 = mid.subtract(new BigDecimal("0.5"));
+        behave(tick2, mid2, later);
+        LocalDateTime evenLater = later.plusHours(1);
+        BigDecimal mid3 = mid.add(new BigDecimal("0.25"));
+        behave(tick3, mid3, evenLater);
+        when(tick3.isInverted()).thenReturn(true);
+        Candle candle = Candle.create(asList(tick1, tick2, tick3), pair, duration, evenLater);
+        verifyCandle(candle, duration, pair, evenLater, mid, mid3, mid2, mid3, 3, 0, 0, 2);
     }
 
     @Test
     public void tripleAllSameTimestamp() {
         LocalDateTime base = LocalDateTime.now();
         BigDecimal mid = BigDecimal.ONE;
-        CandleSize duration = CandleSize.FIVE_MINUTES;
+        TimeFrame duration = TimeFrame.FIVE_MINUTES;
         behave(tick1, mid, base);
         BigDecimal mid2 = mid.subtract(new BigDecimal("0.5"));
         behave(tick2, mid2, base);
         BigDecimal mid3 = mid.add(new BigDecimal("0.25"));
         behave(tick3, mid3, base);
         Candle candle = Candle.create(asList(tick1, tick2, tick3), pair, duration, base);
-        verifyCandle(candle, duration, pair, base, mid, mid3, mid2, mid, 3, 2, 0);
+        verifyCandle(candle, duration, pair, base, mid, mid3, mid2, mid, 3, 2, 0, 0);
     }
 
     private void behave(Tick tick, BigDecimal mid, LocalDateTime time) {
@@ -243,9 +261,9 @@ public class CandleTest {
         when(tick.isError()).thenReturn(false);
     }
 
-    private void verifyCandle(Candle candle, CandleSize duration, CurrencyPair pair, LocalDateTime timestamp,
+    private void verifyCandle(Candle candle, TimeFrame duration, CurrencyPair pair, LocalDateTime timestamp,
                               BigDecimal open, BigDecimal high, BigDecimal low, BigDecimal close, int tickCount,
-                              long duplicates, int errorCount) {
+                              long duplicates, int errorCount, int inversionCount) {
         assertEquals(duration, candle.getDuration());
         assertEquals(pair, candle.getPair());
         assertEquals(timestamp, candle.getTimestamp());
@@ -256,5 +274,6 @@ public class CandleTest {
         assertEquals(tickCount, candle.getTickCount());
         assertEquals(duplicates, candle.getDuplicatesCount());
         assertEquals(errorCount, candle.getErrorCount());
+        assertEquals(inversionCount, candle.getInversionCount());
     }
 }

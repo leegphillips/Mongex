@@ -8,8 +8,8 @@ import java.time.temporal.ChronoUnit;
 public class CandleDefinitions {
     final static CandleSpecification ONE_MINUTE = new CandleSpecification() {
         @Override
-        public CandleSize getTickSize() {
-            return CandleSize.ONE_MINUTE;
+        public TimeFrame getTickSize() {
+            return TimeFrame.ONE_MINUTE;
         }
 
         @Override
@@ -31,8 +31,8 @@ public class CandleDefinitions {
 
     final static CandleSpecification FIVE_MINUTES = new CandleSpecification() {
         @Override
-        public CandleSize getTickSize() {
-            return CandleSize.FIVE_MINUTES;
+        public TimeFrame getTickSize() {
+            return TimeFrame.FIVE_MINUTES;
         }
 
         @Override

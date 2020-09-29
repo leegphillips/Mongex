@@ -3,7 +3,7 @@ package org.github.leegphillips.mongex;
 import java.time.LocalDateTime;
 
 public interface CandleSpecification {
-    CandleSize getTickSize();
+    TimeFrame getTickSize();
 
     LocalDateTime getFloor(LocalDateTime time);
 

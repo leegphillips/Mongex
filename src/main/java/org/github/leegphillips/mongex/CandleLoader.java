@@ -44,7 +44,7 @@ public class CandleLoader extends AbstractLoader {
         List<Tick> batch = new ArrayList<>();
         LocalDateTime batchFloor = null;
         LocalDateTime batchCeiling = null;
-        CandleSize tickSize = candleSpecification.getTickSize();
+        TimeFrame tickSize = candleSpecification.getTickSize();
 
         for (CSVRecord record : records) {
             LocalDateTime time = LocalDateTime.parse(record.get(0), STR2DATE);
