@@ -25,7 +25,7 @@ import static org.github.leegphillips.mongex.PropertiesSingleton.SOURCE_DIR;
 public class CandleLoader {
     public static final String COLLECTION_NAME = "CANDLES";
 
-    private static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(10);
+    private static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(8);
 
     private static final Logger LOG = LoggerFactory.getLogger(CandleLoader.class);
 
@@ -41,13 +41,13 @@ public class CandleLoader {
         this.candleSpecification = candleSpecification;
     }
 
-    public static void main(String[] args) throws IOException, ExecutionException, InterruptedException {
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
         Properties properties = PropertiesSingleton.getInstance();
         MongoDatabase db = DatabaseFactory.create(properties);
         new CandleLoader(properties, db, new ZipExtractor(), CandleDefinitions.FIVE_MINUTES).execute();
     }
 
-    private void execute() throws IOException, ExecutionException, InterruptedException {
+    private void execute() throws ExecutionException, InterruptedException {
         long start = System.currentTimeMillis();
 
         MongoCollection<Document> candlesCollection = db.getCollection(COLLECTION_NAME);
@@ -60,16 +60,13 @@ public class CandleLoader {
         LOG.info("Loading " + files.length + " files");
 
         AtomicInteger counter = new AtomicInteger(files.length);
-        Collection<Future<?>> futures = new LinkedList<Future<?>>();
+        Collection<Future<?>> futures = new LinkedList<>();
         for (File file : files) {
-            Future<?> processing = THREAD_POOL.submit(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        processFile(file, candlesCollection, counter);
-                    } catch (IOException e) {
-                        LOG.error(file.getName(), e);
-                    }
+            Future<?> processing = THREAD_POOL.submit(() -> {
+                try {
+                    processFile(file, candlesCollection, counter);
+                } catch (IOException e) {
+                    LOG.error(file.getName(), e);
                 }
             });
             futures.add(processing);
@@ -83,7 +80,7 @@ public class CandleLoader {
 
     private void processFile(File file, MongoCollection<Document> candlesCollection, AtomicInteger counter) throws IOException {
         long start = System.currentTimeMillis();
-        CurrencyPair pair = new CurrencyPair(file.getName().substring(10, 16));
+        CurrencyPair pair = new CurrencyPair(file.getName().substring(19, 25));
 
         File csvFile = extractor.extractCSV(file);
         Reader fileReader = new FileReader(csvFile);
