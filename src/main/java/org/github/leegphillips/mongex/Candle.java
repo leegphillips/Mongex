@@ -132,6 +132,11 @@ public class Candle {
                 inversionCount, type);
     }
 
+    public Candle generateFrom(LocalDateTime nextSlot) {
+        return new Candle(timeFrame, pair, nextSlot, close, close, close, close, 0, 0, 0,
+                0, Type.GENERATED);
+    }
+
     public Document toDocument() {
         Document result = new Document();
 

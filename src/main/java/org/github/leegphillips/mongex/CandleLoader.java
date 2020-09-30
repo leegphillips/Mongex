@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.mongodb.client.model.Indexes.ascending;
 import static java.util.Arrays.stream;
+import static java.util.stream.Collectors.toList;
 import static org.github.leegphillips.mongex.PropertiesSingleton.SOURCE_DIR;
 
 public class CandleLoader {
@@ -53,7 +54,7 @@ public class CandleLoader {
                 .map(file -> new CurrencyPair(file))
                 .distinct()
                 .parallel()
-                .map(pair -> stream(files).filter(file -> file.getName().contains(pair.getLabel())))
+                .map(pair -> stream(files).filter(file -> file.getName().contains(pair.getLabel())).collect(toList()))
                 .map(allFilesForPair -> new FileListCandleLoader(extractor, candleSpecification, allFilesForPair, candlesCollection, counter))
                 .forEach(FileListCandleLoader::run);
 
