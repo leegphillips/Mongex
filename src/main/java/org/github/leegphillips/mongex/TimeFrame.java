@@ -55,7 +55,6 @@ public enum TimeFrame {
 
     @Override
     public String toString() {
-        return "TimeFrame{" +
-                "label='" + label + '}';
+        return label;
     }
 }
