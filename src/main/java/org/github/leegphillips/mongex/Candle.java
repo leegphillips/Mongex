@@ -27,7 +27,6 @@ public class Candle {
     public static final String ERROR_COUNT_ATTR_NAME = "error count";
     public static final String DUPLICATES_COUNT_ATTR_NAME = "duplicates count";
     public static final String INVERSION_COUNT_ATTR_NAME = "inversion count";
-    public static final String TYPE_ATTR_NAME = "type";
 
     private static final DateTimeFormatter STR2DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
@@ -42,23 +41,31 @@ public class Candle {
     private final int errorCount;
     private final int inversionCount;
     private final int duplicatesCount;
-    private final Type type;
 
     private Candle(TimeFrame timeFrame, CurrencyPair pair, LocalDateTime timestamp, BigDecimal open, BigDecimal high,
                    BigDecimal low, BigDecimal close, int tickCount, int duplicatesCount, int errorCount,
-                   int inversionCount, Type type) {
+                   int inversionCount) {
         this.timeFrame = timeFrame;
         this.pair = pair;
+
+        // ending timestamp of the candle - close time
         this.timestamp = timestamp;
         this.open = open;
         this.high = high;
         this.low = low;
         this.close = close;
+
+        // number of ticks used to compose the candle, if 0 then candle is generated from previous candle
         this.tickCount = tickCount;
+
+        // number of timestamp collisions in composing ticks - if > 0 then may be issues with open/close
         this.duplicatesCount = duplicatesCount;
+
+        // number of ticks with errors detected - usually bid/ask == 0
         this.errorCount = errorCount;
+
+        // number of ticks where bid/ask needed to be inverted to be +ve
         this.inversionCount = inversionCount;
-        this.type = type;
     }
 
     public static Candle create(@NonNull List<Tick> ticks, @NonNull CurrencyPair pair,
@@ -72,7 +79,7 @@ public class Candle {
                 .orElseThrow(() -> new IllegalStateException(format("Candles need at least one tick %s %s %s", pair.getLabel(), ticks.size(), batchCeiling)));
 
         return new Candle(candle.timeFrame, candle.pair, batchCeiling, candle.open, candle.high, candle.low,
-                candle.close, candle.tickCount, duplicates, candle.errorCount, candle.inversionCount, Type.REAL);
+                candle.close, candle.tickCount, duplicates, candle.errorCount, candle.inversionCount);
     }
 
     public static Candle create(@NonNull Document doc) {
@@ -87,10 +94,9 @@ public class Candle {
         int duplicatesCount = doc.getInteger(DUPLICATES_COUNT_ATTR_NAME);
         int errorCount = doc.getInteger(ERROR_COUNT_ATTR_NAME);
         int inversionCount = doc.getInteger(INVERSION_COUNT_ATTR_NAME);
-        Type type = Type.valueOf(doc.getString(TYPE_ATTR_NAME));
 
         return new Candle(timeframe, pair, timestamp, open, high, low, close, tickCount, duplicatesCount, errorCount,
-                inversionCount, type);
+                inversionCount);
     }
 
     private static Tick tickValidator(Tick tick, LocalDateTime batchCeiling) {
@@ -101,7 +107,7 @@ public class Candle {
 
     private static Candle tickMapper(TimeFrame duration, CurrencyPair pair, Tick tick) {
         return new Candle(duration, pair, tick.getTimestamp(), tick.getMid(), tick.getMid(), tick.getMid(), tick.getMid(),
-                1, 0, tick.isError() ? 1 : 0, tick.isInverted() ? 1 : 0, Type.REAL);
+                1, 0, tick.isError() ? 1 : 0, tick.isInverted() ? 1 : 0);
     }
 
     private static Candle combiner(Candle c1, Candle c2) {
@@ -125,16 +131,13 @@ public class Candle {
             duplicates++;
         int inversionCount = c1.inversionCount + c2.inversionCount;
 
-        // only call to merge REAL ticks
-        Type type = Type.REAL;
-
         return new Candle(c1.timeFrame, c1.pair, timestamp, open, high, low, close, tickCount, duplicates, errorCount,
-                inversionCount, type);
+                inversionCount);
     }
 
     public Candle generateFrom(LocalDateTime nextSlot) {
         return new Candle(timeFrame, pair, nextSlot, close, close, close, close, 0, 0, 0,
-                0, Type.GENERATED);
+                0);
     }
 
     public Document toDocument() {
@@ -197,9 +200,5 @@ public class Candle {
 
     public int getInversionCount() {
         return inversionCount;
-    }
-
-    private enum Type {
-        REAL, GENERATED
     }
 }
