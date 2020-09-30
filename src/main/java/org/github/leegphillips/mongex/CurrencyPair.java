@@ -3,6 +3,7 @@ package org.github.leegphillips.mongex;
 import lombok.NonNull;
 import lombok.ToString;
 
+import java.io.File;
 import java.util.Objects;
 
 import static java.lang.String.format;
@@ -17,6 +18,10 @@ public class CurrencyPair {
         if (label.length() != 6)
             throw new IllegalArgumentException(format("Currency pair label must be 6 characters: %s", label));
         this.label = label;
+    }
+
+    public CurrencyPair(@NonNull File file) {
+        this(file.getName().substring(19, 25));
     }
 
     public String getLabel() {

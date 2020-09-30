@@ -264,7 +264,7 @@ public class CandleTest {
     private void verifyCandle(Candle candle, TimeFrame duration, CurrencyPair pair, LocalDateTime timestamp,
                               BigDecimal open, BigDecimal high, BigDecimal low, BigDecimal close, int tickCount,
                               long duplicates, int errorCount, int inversionCount) {
-        assertEquals(duration, candle.getDuration());
+        assertEquals(duration, candle.getTimeFrame());
         assertEquals(pair, candle.getPair());
         assertEquals(timestamp, candle.getTimestamp());
         assertEquals(open, candle.getOpen());

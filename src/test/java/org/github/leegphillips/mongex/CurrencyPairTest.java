@@ -14,7 +14,7 @@ public class CurrencyPairTest {
     @SuppressWarnings("ConstantConditions")
     @Test(expected = NullPointerException.class)
     public void cannotCreateWithNull() {
-        new CurrencyPair(null);
+        new CurrencyPair((String) null);
     }
 
     @Test(expected = IllegalArgumentException.class)
