@@ -1,0 +1,1 @@
+search using regex: {level:"ERROR", current:{$regex : ".*AUDCAD.*"}}

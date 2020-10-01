@@ -54,8 +54,10 @@ public class CandleLoader {
                 .distinct()
                 .parallel()
                 .map(pair -> stream(files).filter(file -> file.getName().contains(pair.getLabel())).collect(toList()))
-                .map(allFilesForPair -> new FileListCandleLoader(extractor, candleSpecification, allFilesForPair, candlesCollection, counter))
-                .forEach(FileListCandleLoader::run);
+                .map(allFilesForPair -> new FileListCandleLoader(extractor, candleSpecification, allFilesForPair, counter))
+                .map(FileListCandleLoader::call)
+                .map(candles -> candles.stream().map(Candle::toDocument).collect(toList()))
+                .forEach(candlesCollection::insertMany);
 
         LOG.info(files.length + " loaded in " + (System.currentTimeMillis() - start) + "ms");
     }
