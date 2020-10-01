@@ -6,6 +6,7 @@ import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,10 +72,13 @@ public class CandleSeriesChecker {
             Candle prev = null;
             for (Document doc : pairSeries) {
                 Candle current = Candle.create(doc);
-//                if (prev != null && !current.getTimestamp().isEqual(TIME_FRAME.next(prev.getTimestamp())))
-//                    throw new IllegalStateException("Illegal gap: " + candle.getPair().getLabel() + " " + prev.getTimestamp() + " " + current.getTimestamp());
+                if (prev != null && !current.getTimestamp().isEqual(TIME_FRAME.next(prev.getTimestamp()))) {
+                    MDC.put("prev", prev.toString());
+                    MDC.put("current", current.toString());
+                    LOG.error("Illegal gap");
+                    break;
+                }
                 prev = current;
-                LOG.info(current.getPair().getLabel() + " " + current.getTimestamp() + " " + counter.get());
             }
             counter.decrementAndGet();
         }
