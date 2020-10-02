@@ -6,7 +6,6 @@ import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,8 +13,8 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-public class CandleSeriesChecker {
-    private static final Logger LOG = LoggerFactory.getLogger(CandleSeriesChecker.class);
+public class FullCandleSeriesChecker {
+    private static final Logger LOG = LoggerFactory.getLogger(FullCandleSeriesChecker.class);
 
     private static final TimeFrame TIME_FRAME = TimeFrame.FIVE_MINUTES;
 
@@ -24,7 +23,7 @@ public class CandleSeriesChecker {
 
     private final AtomicInteger counter = new AtomicInteger();
 
-    public CandleSeriesChecker(Properties properties, MongoDatabase db) {
+    public FullCandleSeriesChecker(Properties properties, MongoDatabase db) {
         this.properties = properties;
         this.db = db;
     }
@@ -33,7 +32,7 @@ public class CandleSeriesChecker {
         long start = System.currentTimeMillis();
         Properties properties = PropertiesSingleton.getInstance();
         MongoDatabase db = DatabaseFactory.create(properties);
-        new CandleSeriesChecker(properties, db).execute();
+        new FullCandleSeriesChecker(properties, db).execute();
         LOG.info("All streams scanned in " + (System.currentTimeMillis() - start) + "ms");
     }
 
@@ -52,35 +51,9 @@ public class CandleSeriesChecker {
 
         Stream<FindIterable<Document>> pairsSeries = pairs.parallelStream()
                 .map(pair -> candles.find(new Document(CurrencyPair.ATTR_NAME, pair.getLabel())
-                        .append(TimeFrame.ATTR_NAME, TIME_FRAME.getLabel()))
-                        .sort(new Document(Candle.TIMESTAMP_ATTR_NAME, 1)));
-
+                        .append(TimeFrame.ATTR_NAME, TIME_FRAME.getLabel())));
         pairsSeries
-                .map(pairSeries -> new Checker(pairSeries))
-                .forEach(Checker::run);
-    }
-
-    private class Checker implements Runnable {
-        private final FindIterable<Document> pairSeries;
-
-        private Checker(FindIterable<Document> pairSeries) {
-            this.pairSeries = pairSeries;
-        }
-
-        @Override
-        public void run() {
-            Candle prev = null;
-            for (Document doc : pairSeries) {
-                Candle current = Candle.create(doc);
-                if (prev != null && !current.getTimestamp().isEqual(TIME_FRAME.next(prev.getTimestamp()))) {
-                    MDC.put("prev", prev.toString());
-                    MDC.put("current", current.toString());
-                    LOG.error("Illegal gap");
-                    break;
-                }
-                prev = current;
-            }
-            counter.decrementAndGet();
-        }
+                .map(pairSeries -> new CandleSeriesChecker(pairSeries, TIME_FRAME, counter))
+                .forEach(CandleSeriesChecker::run);
     }
 }
