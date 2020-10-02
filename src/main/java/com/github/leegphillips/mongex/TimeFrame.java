@@ -28,11 +28,11 @@ public enum TimeFrame {
     public static final String ATTR_NAME = "timeframe";
 
     private final String label;
-    private final UnaryOperator<LocalDateTime> operator;
+    private final UnaryOperator<LocalDateTime> next;
 
-    TimeFrame(String label, UnaryOperator<LocalDateTime> operator) {
+    TimeFrame(String label, UnaryOperator<LocalDateTime> next) {
         this.label = label;
-        this.operator = operator;
+        this.next = next;
     }
 
     public String getLabel() {
@@ -40,7 +40,7 @@ public enum TimeFrame {
     }
 
     public LocalDateTime next(LocalDateTime timestamp) {
-        return operator.apply(timestamp);
+        return next.apply(timestamp);
     }
 
     // :(

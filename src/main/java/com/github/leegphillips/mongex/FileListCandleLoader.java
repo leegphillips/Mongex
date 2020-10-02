@@ -1,6 +1,7 @@
 package com.github.leegphillips.mongex;
 
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.bson.Document;
@@ -15,8 +16,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static java.util.Arrays.stream;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 
@@ -33,6 +36,17 @@ public class FileListCandleLoader implements Runnable {
     private final TimeFrame timeFrame;
     private LocalDateTime chunkEnd;
     private Candle pos;
+
+    public static void main(String[] args) {
+        ZipExtractor extractor = new ZipExtractor();
+        Properties properties = PropertiesSingleton.getInstance();
+        MongoDatabase db = DatabaseFactory.create(properties);
+        MongoCollection<Document> candles = db.getCollection(CandleLoader.COLLECTION_NAME);
+        File[] files = new File(properties.getProperty(PropertiesSingleton.SOURCE_DIR)).listFiles();
+        List<File> filesForPair = stream(files).filter(file -> file.getName().contains(args[0])).collect(toList());
+        AtomicInteger counter = new AtomicInteger(filesForPair.size());
+        new FileListCandleLoader(extractor, CandleDefinitions.FIVE_MINUTES, candles, filesForPair, counter).run();
+    }
 
     public FileListCandleLoader(ZipExtractor extractor, CandleSpecification candleSpecification,
                                 MongoCollection<Document> candlesCollection, List<File> allFilesForPair,
