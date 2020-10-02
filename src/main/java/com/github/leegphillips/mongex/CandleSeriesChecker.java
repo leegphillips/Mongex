@@ -45,7 +45,6 @@ public class CandleSeriesChecker implements Runnable {
                 LOG.error("Illegal gap");
                 break;
             }
-            System.out.println(current);
             prev = current;
         }
         counter.decrementAndGet();
