@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -54,9 +55,16 @@ public class CandleLoader {
                 .distinct()
                 .parallel()
                 .map(pair -> stream(files).filter(file -> file.getName().contains(pair.getLabel())).collect(toList()))
-                .map(allFilesForPair -> new FileListCandleLoader(extractor, candleSpecification, candlesCollection, allFilesForPair, counter))
-                .forEach(FileListCandleLoader::call);
+                .map(allFilesForPair -> new FileListCandleLoader(extractor, candleSpecification, allFilesForPair, counter))
+                .map(FileListCandleLoader::call)
+                .map(candles -> candles.stream().map(Candle::toDocument).collect(toList()))
+                .forEach(docs -> insert(docs));
 
         LOG.info(files.length + " loaded in " + (System.currentTimeMillis() - start) + "ms");
+    }
+
+    private void insert(List<Document> candles) {
+        candlesCollection.insertMany(candles);
+        LOG.info("Final insert: " + candles.get(0).getString(CurrencyPair.ATTR_NAME) + " " + candles.size());
     }
 }

@@ -1,9 +1,7 @@
 package com.github.leegphillips.mongex;
 
-import com.mongodb.client.MongoCollection;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
-import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,7 +15,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import static java.util.Comparator.comparing;
 
@@ -28,7 +25,6 @@ public class FileListCandleLoader implements Callable<List<Candle>> {
 
     private final ZipExtractor extractor;
     private final CandleSpecification candleSpecification;
-    private final MongoCollection<Document> candlesCollection;
     private final List<File> allFilesForPair;
     private final AtomicInteger counter;
     private final TimeFrame timeFrame;
@@ -36,11 +32,9 @@ public class FileListCandleLoader implements Callable<List<Candle>> {
     private Candle pos;
 
     public FileListCandleLoader(ZipExtractor extractor, CandleSpecification candleSpecification,
-                                MongoCollection<Document> candlesCollection,
                                 List<File> allFilesForPair, AtomicInteger counter) {
         this.extractor = extractor;
         this.candleSpecification = candleSpecification;
-        this.candlesCollection = candlesCollection;
         this.allFilesForPair = allFilesForPair;
         this.counter = counter;
         this.allFilesForPair.sort(File::compareTo);
@@ -62,7 +56,6 @@ public class FileListCandleLoader implements Callable<List<Candle>> {
                 try (CSVParser records = CSVFormat.DEFAULT.parse(new BufferedReader(new FileReader(csvFile)))) {
                     candles.addAll(padMissingCandles(new CandleBatcher(pair, candleSpecification, records).call()));
                 }
-                candlesCollection.insertMany(candles.stream().map(Candle::toDocument).collect(Collectors.toList()));
                 csvFile.delete();
                 LOG.info(file.getName() + " " + candles.size() + " candles " + (System.currentTimeMillis() - start) + "ms Remaining: " + counter.decrementAndGet());
             } catch (IOException e) {
