@@ -135,9 +135,10 @@ public class Candle {
                 inversionCount);
     }
 
+    // TODO add tests
     public Candle generateFrom(LocalDateTime nextSlot) {
-        return new Candle(timeFrame, pair, nextSlot, close, close, close, close, 0, 0, 0,
-                0);
+        return new Candle(timeFrame, pair, nextSlot, close, close, close, close, 0, duplicatesCount, errorCount,
+                inversionCount);
     }
 
     public Document toDocument() {
