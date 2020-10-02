@@ -53,7 +53,7 @@ public enum TimeFrame {
     }
 
     public LocalDateTime ceiling(LocalDateTime timestamp) {
-        return floor.apply(timestamp);
+        return ceiling.apply(timestamp);
     }
 
     // :(
