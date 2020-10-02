@@ -9,30 +9,35 @@ import java.util.function.UnaryOperator;
 
 @SuppressWarnings("unused")
 public enum TimeFrame {
-    FIVE_SECONDS("5s", timestamp -> timestamp.plusSeconds(5)),
-    TEN_SECONDS("10s", timestamp -> timestamp.plusSeconds(10)),
-    THIRTY_SECONDS("30s", timestamp -> timestamp.plusSeconds(30)),
-    ONE_MINUTE("1m", timestamp -> timestamp.plusMinutes(1)),
-    FIVE_MINUTES("5m", timestamp -> timestamp.plusMinutes(5)),
-    TEN_MINUTES("10m", timestamp -> timestamp.plusMinutes(10)),
-    FIFTEEN_MINUTES("15m", timestamp -> timestamp.plusMinutes(15)),
-    THIRTY_MINUTES("30m", timestamp -> timestamp.plusMinutes(30)),
-    ONE_HOUR("1h", timestamp -> timestamp.plusHours(1)),
-    THREE_HOURS("3h", timestamp -> timestamp.plusHours(3)),
-    FOUR_HOURS("4h", timestamp -> timestamp.plusHours(4)),
-    EIGHT_HOURS("8h", timestamp -> timestamp.plusHours(8)),
-    ONE_DAY("1D", timestamp -> timestamp.plusDays(1)),
-    ONE_WEEK("1W", timestamp -> timestamp.plusWeeks(1)),
-    ONE_MONTH("1M", timestamp -> timestamp.plusMonths(1));
+    FIVE_SECONDS("5s", timestamp -> timestamp.plusSeconds(5), null, null),
+    TEN_SECONDS("10s", timestamp -> timestamp.plusSeconds(10), null, null),
+    THIRTY_SECONDS("30s", timestamp -> timestamp.plusSeconds(30), null, null),
+    ONE_MINUTE("1m", timestamp -> timestamp.plusMinutes(1), null, null),
+    FIVE_MINUTES("5m", timestamp -> timestamp.plusMinutes(5), null, null),
+    TEN_MINUTES("10m", timestamp -> timestamp.plusMinutes(10), null, null),
+    FIFTEEN_MINUTES("15m", timestamp -> timestamp.plusMinutes(15), null, null),
+    THIRTY_MINUTES("30m", timestamp -> timestamp.plusMinutes(30), null, null),
+    ONE_HOUR("1h", timestamp -> timestamp.plusHours(1), null, null),
+    THREE_HOURS("3h", timestamp -> timestamp.plusHours(3), null, null),
+    FOUR_HOURS("4h", timestamp -> timestamp.plusHours(4), null, null),
+    EIGHT_HOURS("8h", timestamp -> timestamp.plusHours(8), null, null),
+    ONE_DAY("1D", timestamp -> timestamp.plusDays(1), null, null),
+    ONE_WEEK("1W", timestamp -> timestamp.plusWeeks(1), null, null),
+    ONE_MONTH("1M", timestamp -> timestamp.plusMonths(1), null, null);
 
     public static final String ATTR_NAME = "timeframe";
 
     private final String label;
     private final UnaryOperator<LocalDateTime> next;
+    private final UnaryOperator<LocalDateTime> floor;
+    private final UnaryOperator<LocalDateTime> ceiling;
 
-    TimeFrame(String label, UnaryOperator<LocalDateTime> next) {
+    TimeFrame(String label, UnaryOperator<LocalDateTime> next,
+              UnaryOperator<LocalDateTime> floor, UnaryOperator<LocalDateTime> ceiling) {
         this.label = label;
         this.next = next;
+        this.floor = floor;
+        this.ceiling = ceiling;
     }
 
     public String getLabel() {
@@ -41,6 +46,14 @@ public enum TimeFrame {
 
     public LocalDateTime next(LocalDateTime timestamp) {
         return next.apply(timestamp);
+    }
+
+    public LocalDateTime floor(LocalDateTime timestamp) {
+        return floor.apply(timestamp);
+    }
+
+    public LocalDateTime ceiling(LocalDateTime timestamp) {
+        return floor.apply(timestamp);
     }
 
     // :(
