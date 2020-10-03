@@ -4,6 +4,6 @@ public class App {
     public static void main(String[] args) {
         CandleLoader.main(args);
         FullCandleSeriesChecker.main(args);
-        MarketAggregator2.main(args);
+        MarketAggregator.main(args);
     }
 }

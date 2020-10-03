@@ -11,22 +11,22 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MarketAggregator2 {
-    private static final Logger LOG = LoggerFactory.getLogger(MarketAggregator2.class);
+public class MarketAggregator {
+    private static final Logger LOG = LoggerFactory.getLogger(MarketAggregator.class);
 
     private static final String COLLECTION_NAME = "MARKET";
 
     private final MongoDatabase db;
     private final TimeFrame timeFrame;
 
-    public MarketAggregator2(MongoDatabase db, TimeFrame timeFrame) {
+    public MarketAggregator(MongoDatabase db, TimeFrame timeFrame) {
         this.db = db;
         this.timeFrame = timeFrame;
     }
 
     public static void main(String[] args) {
         long start = System.currentTimeMillis();
-        new MarketAggregator2(DatabaseFactory.create(PropertiesSingleton.getInstance()), TimeFrame.FIVE_MINUTES).execute();
+        new MarketAggregator(DatabaseFactory.create(PropertiesSingleton.getInstance()), TimeFrame.FIVE_MINUTES).execute();
         LOG.info("Completed in " + (System.currentTimeMillis() - start) / 1000 + "s");
     }
 
