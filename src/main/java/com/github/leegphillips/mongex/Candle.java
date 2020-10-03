@@ -99,6 +99,11 @@ public class Candle {
                 inversionCount);
     }
 
+    public static Candle createForNotStarted(TimeFrame timeframe, CurrencyPair pair, LocalDateTime timestamp) {
+        return new Candle(timeframe, pair, timestamp, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 0, 0, 0, 0);
+    }
+
+
     private static Tick tickValidator(Tick tick, LocalDateTime batchCeiling) {
         if (tick.getTimestamp().isAfter(batchCeiling))
             throw new IllegalStateException(format("Tick is outside the range of Candle %s %s", batchCeiling, tick.getTimestamp()));
