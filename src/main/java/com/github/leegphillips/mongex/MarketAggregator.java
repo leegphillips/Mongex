@@ -14,7 +14,7 @@ import java.util.List;
 public class MarketAggregator {
     private static final Logger LOG = LoggerFactory.getLogger(MarketAggregator.class);
 
-    private static final String COLLECTION_NAME = "MARKET";
+    public static final String COLLECTION_NAME = "MARKET";
 
     private final MongoDatabase db;
     private final TimeFrame timeFrame;
