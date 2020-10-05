@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -136,7 +137,7 @@ public class Candle {
         LocalDateTime timestamp = c1IsBefore ? c2.timestamp : c1.timestamp;
         BigDecimal open = timestampCollision || c1IsBefore ? c1.open : c2.open;
         BigDecimal close = timestampCollision ? c1.close : c1IsBefore ? c2.close : c1.close;
-        BigDecimal mid = (c1.mid.multiply(BigDecimal.valueOf(c1.tickCount)).add(c2.mid.multiply(BigDecimal.valueOf(c2.tickCount)))).divide(BigDecimal.valueOf(tickCount));
+        BigDecimal mid = (c1.mid.multiply(BigDecimal.valueOf(c1.tickCount)).add(c2.mid.multiply(BigDecimal.valueOf(c2.tickCount)))).divide(BigDecimal.valueOf(tickCount), 4, RoundingMode.HALF_EVEN);
         int duplicates = c1.duplicatesCount + c2.duplicatesCount;
         if (timestampCollision)
             duplicates++;
