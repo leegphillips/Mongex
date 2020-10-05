@@ -40,6 +40,9 @@ public class MALoader {
     }
 
     private void execute() {
+        movingAverages.createIndex(new Document(Candle.TIMESTAMP_ATTR_NAME, 1));
+        movingAverages.createIndex(new Document(CurrencyPair.ATTR_NAME, 1));
+
         List<CurrencyPair> pairs = new ArrayList<>();
         candles.distinct(CurrencyPair.ATTR_NAME, String.class)
                 .map(CurrencyPair::new)

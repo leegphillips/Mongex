@@ -1,6 +1,5 @@
 package com.github.leegphillips.mongex.dataLayer;
 
-import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 
 import java.time.LocalDateTime;
@@ -12,9 +11,9 @@ public class CandleBatcher implements Callable<List<Candle>> {
 
     private final CurrencyPair pair;
     private final CandleSpecification candleSpecification;
-    private final CSVParser records;
+    private final Iterable<CSVRecord> records;
 
-    public CandleBatcher(CurrencyPair pair, CandleSpecification candleSpecification, CSVParser records) {
+    public CandleBatcher(CurrencyPair pair, CandleSpecification candleSpecification, Iterable<CSVRecord> records) {
         this.pair = pair;
         this.candleSpecification = candleSpecification;
         this.records = records;

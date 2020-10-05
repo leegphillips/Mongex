@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -59,10 +58,5 @@ public class CandleLoader {
                 .forEach(FileListCandleLoader::run);
 
         LOG.info(files.length + " loaded in " + (System.currentTimeMillis() - start) + "ms");
-    }
-
-    private void insert(List<Document> candles) {
-        candlesCollection.insertMany(candles);
-        LOG.info("Final insert: " + candles.get(0).getString(CurrencyPair.ATTR_NAME) + " " + candles.size());
     }
 }

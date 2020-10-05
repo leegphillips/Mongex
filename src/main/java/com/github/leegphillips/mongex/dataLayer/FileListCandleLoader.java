@@ -4,6 +4,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +16,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -73,7 +75,7 @@ public class FileListCandleLoader implements Runnable {
                 List<Candle> candles = new ArrayList<>();
                 File csvFile = extractor.extractCSV(file);
                 try (CSVParser records = CSVFormat.DEFAULT.parse(new BufferedReader(new FileReader(csvFile)))) {
-                    candles.addAll(padMissingCandles(new CandleBatcher(pair, candleSpecification, records).call()));
+                    candles.addAll(padMissingCandles(new CandleBatcher(pair, candleSpecification, new TickPadder(records)).call()));
                 }
                 csvFile.delete();
                 candlesCollection.insertMany(candles.stream().map(Candle::toDocument).collect(toList()));
@@ -111,6 +113,30 @@ public class FileListCandleLoader implements Runnable {
         if (pos.getTimestamp().isBefore(last.getTimestamp())) {
             // the case when we come in with a mid stream tick
             pos = last;
+        }
+    }
+
+    private class TickPadder implements Iterable<CSVRecord> {
+
+        private final Iterable<CSVRecord> records;
+
+        private TickPadder(Iterable<CSVRecord> records) {
+            this.records = records;
+        }
+
+        @Override
+        public Iterator<CSVRecord> iterator() {
+            return new Iterator<CSVRecord>() {
+                @Override
+                public boolean hasNext() {
+                    return records.iterator().hasNext();
+                }
+
+                @Override
+                public CSVRecord next() {
+                    return records.iterator().next();
+                }
+            };
         }
     }
 }

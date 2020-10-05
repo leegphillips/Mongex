@@ -30,7 +30,7 @@ public class Candle {
     public static final String DUPLICATES_COUNT_ATTR_NAME = "duplicates count";
     public static final String INVERSION_COUNT_ATTR_NAME = "inversion count";
 
-    private static final DateTimeFormatter STR2DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private final TimeFrame timeFrame;
     private final CurrencyPair pair;
@@ -89,7 +89,7 @@ public class Candle {
     public static Candle create(@NonNull Document doc) {
         TimeFrame timeframe = TimeFrame.get(doc.getString(TimeFrame.ATTR_NAME));
         CurrencyPair pair = new CurrencyPair(doc.getString(CurrencyPair.ATTR_NAME));
-        LocalDateTime timestamp = LocalDateTime.parse(doc.getString(TIMESTAMP_ATTR_NAME), STR2DATE);
+        LocalDateTime timestamp = LocalDateTime.parse(doc.getString(TIMESTAMP_ATTR_NAME), FORMATTER);
         BigDecimal open = doc.get(OPEN_ATTR_NAME, Decimal128.class).bigDecimalValue();
         BigDecimal high = doc.get(HIGH_ATTR_NAME, Decimal128.class).bigDecimalValue();
         BigDecimal low = doc.get(LOW_ATTR_NAME, Decimal128.class).bigDecimalValue();
@@ -158,7 +158,7 @@ public class Candle {
 
         result.append(TimeFrame.ATTR_NAME, timeFrame.getLabel());
         result.append(CurrencyPair.ATTR_NAME, pair.getLabel());
-        result.append(Timestamp.ATTR_NAME, Timestamp.format(timestamp));
+        result.append(TIMESTAMP_ATTR_NAME, FORMATTER.format(timestamp));
         result.append(OPEN_ATTR_NAME, open);
         result.append(HIGH_ATTR_NAME, high);
         result.append(LOW_ATTR_NAME, low);

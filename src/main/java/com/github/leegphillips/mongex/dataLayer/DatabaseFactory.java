@@ -13,7 +13,6 @@ public class DatabaseFactory {
                 properties.getProperty("dataloader.mongo.host"),
                 Integer.parseInt(properties.getProperty("dataloader.mongo.port")));
         MongoDatabase database = mongoClient.getDatabase(DB_NAME);
-//        database.createCollection("log");
         return database;
     }
 }
