@@ -2,8 +2,8 @@ package com.github.leegphillips.mongex.logging;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
-import com.github.leegphillips.mongex.DatabaseFactory;
-import com.github.leegphillips.mongex.PropertiesSingleton;
+import com.github.leegphillips.mongex.dataLayer.DatabaseFactory;
+import com.github.leegphillips.mongex.dataLayer.PropertiesSingleton;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
