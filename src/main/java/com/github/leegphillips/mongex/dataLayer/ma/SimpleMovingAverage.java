@@ -1,11 +1,12 @@
 package com.github.leegphillips.mongex.dataLayer.ma;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 public class SimpleMovingAverage extends MovingAverage {
 
     public SimpleMovingAverage(int size) {
-        super("sma" + size, size);
+        super("sma " + size, size);
     }
 
     @Override
@@ -16,6 +17,6 @@ public class SimpleMovingAverage extends MovingAverage {
         return window.stream()
                 .reduce(BigDecimal::add)
                 .get()
-                .divide(BigDecimal.valueOf(size));
+                .divide(BigDecimal.valueOf(size), RoundingMode.HALF_EVEN);
     }
 }

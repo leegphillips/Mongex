@@ -1,5 +1,6 @@
 package com.github.leegphillips.mongex.dataLayer;
 
+import com.github.leegphillips.mongex.dataLayer.ma.SimpleMovingAverage;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import org.apache.commons.csv.CSVFormat;
@@ -38,6 +39,8 @@ public class FileListCandleLoader implements Runnable {
     private LocalDateTime chunkEnd;
     private Tick pos;
 
+    private final List<SimpleMovingAverage> sMAs = stream(new int[]{2, 8, 34, 144, 610, 2584}).mapToObj(SimpleMovingAverage::new).collect(toList());
+
     public static void main(String[] args) {
         ZipExtractor extractor = new ZipExtractor();
         Properties properties = PropertiesSingleton.getInstance();
@@ -74,7 +77,7 @@ public class FileListCandleLoader implements Runnable {
                 List<Candle> candles = new ArrayList<>();
                 File csvFile = extractor.extractCSV(file);
                 try (CSVParser records = CSVFormat.DEFAULT.parse(new BufferedReader(new FileReader(csvFile)))) {
-                    candles.addAll(new CandleBatcher(pair, candleSpecification, new TickPadder(records)).call());
+                    candles.addAll(new CandleBatcher(pair, candleSpecification, new TickPadder(records), sMAs).call());
                 }
                 csvFile.delete();
                 candlesCollection.insertMany(candles.stream().map(Candle::toDocument).collect(toList()));

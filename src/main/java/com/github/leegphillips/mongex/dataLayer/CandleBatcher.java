@@ -1,5 +1,7 @@
 package com.github.leegphillips.mongex.dataLayer;
 
+import com.github.leegphillips.mongex.dataLayer.ma.SimpleMovingAverage;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,11 +12,13 @@ public class CandleBatcher implements Callable<List<Candle>> {
     private final CurrencyPair pair;
     private final CandleSpecification candleSpecification;
     private final Iterable<Tick> ticks;
+    private final List<SimpleMovingAverage> sMAs;
 
-    public CandleBatcher(CurrencyPair pair, CandleSpecification candleSpecification, Iterable<Tick> ticks) {
+    public CandleBatcher(CurrencyPair pair, CandleSpecification candleSpecification, Iterable<Tick> ticks, List<SimpleMovingAverage> sMAs) {
         this.pair = pair;
         this.candleSpecification = candleSpecification;
         this.ticks = ticks;
+        this.sMAs = sMAs;
     }
 
     @Override
@@ -33,14 +37,14 @@ public class CandleBatcher implements Callable<List<Candle>> {
             }
 
             if (time.compareTo(batchCeiling) > 0) {
-                candles.add(Candle.create(batch, pair, tickSize, batchCeiling));
+                candles.add(Candle.create(batch, pair, tickSize, batchCeiling, sMAs));
                 batch = new ArrayList<>();
                 batchFloor = candleSpecification.getFloor(time);
                 batchCeiling = candleSpecification.getCeiling(batchFloor);
             }
             batch.add(tick);
         }
-        candles.add(Candle.create(batch, pair, tickSize, batchCeiling));
+        candles.add(Candle.create(batch, pair, tickSize, batchCeiling, sMAs));
 
         return candles;
     }

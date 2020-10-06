@@ -1,5 +1,6 @@
 package com.github.leegphillips.mongex.dataLayer;
 
+import com.github.leegphillips.mongex.dataLayer.ma.SimpleMovingAverage;
 import lombok.NonNull;
 import lombok.ToString;
 import org.bson.Document;
@@ -11,9 +12,14 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static java.lang.String.format;
+import static java.util.Collections.EMPTY_MAP;
+import static java.util.Comparator.comparing;
 
 @ToString
 public class Candle {
@@ -51,13 +57,14 @@ public class Candle {
 
     // number of ticks where bid/ask needed to be inverted to be +ve
     private final int inversionCount;
+    private final Map<String, BigDecimal> history;
 
     // number of timestamp collisions in composing ticks - if > 0 then may be issues with open/close
     private final int duplicatesCount;
 
     private Candle(TimeFrame timeFrame, CurrencyPair pair, LocalDateTime timestamp, BigDecimal open, BigDecimal high,
                    BigDecimal low, BigDecimal close, BigDecimal mid, int tickCount, int duplicatesCount, int errorCount,
-                   int inversionCount) {
+                   int inversionCount, Map<String, BigDecimal> history) {
         this.timeFrame = timeFrame;
         this.pair = pair;
         this.timestamp = timestamp;
@@ -70,10 +77,12 @@ public class Candle {
         this.duplicatesCount = duplicatesCount;
         this.errorCount = errorCount;
         this.inversionCount = inversionCount;
+        this.history = history;
     }
 
     public static Candle create(@NonNull List<Tick> ticks, @NonNull CurrencyPair pair,
-                                @NonNull TimeFrame tickSize, @NonNull LocalDateTime batchCeiling) {
+                                @NonNull TimeFrame tickSize, @NonNull LocalDateTime batchCeiling,
+                                @NonNull List<SimpleMovingAverage> sMAs) {
         int duplicates = ticks.size() - (int) ticks.stream().map(Tick::getTimestamp).distinct().count();
 
         Candle candle = ticks.parallelStream()
@@ -82,8 +91,14 @@ public class Candle {
                 .reduce(Candle::combiner)
                 .orElseThrow(() -> new IllegalStateException(format("Candles need at least one tick %s %s %s", pair.getLabel(), ticks.size(), batchCeiling)));
 
+        sMAs.stream().forEach(ma -> ma.add(candle.mid));
+
+        Map<String, BigDecimal> history = new HashMap<>();
+        sMAs.stream().forEach(ma -> history.put(ma.getName(), ma.getValue()));
+
         return new Candle(candle.timeFrame, candle.pair, batchCeiling, candle.open, candle.high, candle.low,
-                candle.close, candle.mid, candle.tickCount, duplicates, candle.errorCount, candle.inversionCount);
+                candle.close, candle.mid, candle.tickCount, duplicates, candle.errorCount, candle.inversionCount,
+                history);
     }
 
     public static Candle create(@NonNull Document doc) {
@@ -101,12 +116,12 @@ public class Candle {
         int inversionCount = doc.getInteger(INVERSION_COUNT_ATTR_NAME);
 
         return new Candle(timeframe, pair, timestamp, open, high, low, close, mid, tickCount, duplicatesCount,
-                errorCount, inversionCount);
+                errorCount, inversionCount, EMPTY_MAP);
     }
 
     public static Candle createForNotStarted(TimeFrame timeframe, CurrencyPair pair, LocalDateTime timestamp) {
         return new Candle(timeframe, pair, timestamp, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
-                BigDecimal.ZERO, BigDecimal.ZERO, 0, 0, 0, 0);
+                BigDecimal.ZERO, BigDecimal.ZERO, 0, 0, 0, 0, Collections.emptyMap());
     }
 
 
@@ -118,7 +133,8 @@ public class Candle {
 
     private static Candle tickMapper(TimeFrame duration, CurrencyPair pair, Tick tick) {
         return new Candle(duration, pair, tick.getTimestamp(), tick.getMid(), tick.getMid(), tick.getMid(),
-                tick.getMid(), tick.getMid(), tick.isInterpolated() ? 0 : 1, 0, tick.isError() ? 1 : 0, tick.isInverted() ? 1 : 0);
+                tick.getMid(), tick.getMid(), tick.isInterpolated() ? 0 : 1, 0, tick.isError() ? 1 : 0,
+                tick.isInverted() ? 1 : 0, EMPTY_MAP);
     }
 
     private static Candle combiner(Candle c1, Candle c2) {
@@ -150,13 +166,13 @@ public class Candle {
         int inversionCount = c1.inversionCount + c2.inversionCount;
 
         return new Candle(c1.timeFrame, c1.pair, timestamp, open, high, low, close, mid, tickCount, duplicates, errorCount,
-                inversionCount);
+                inversionCount, EMPTY_MAP);
     }
 
     // TODO add tests
     public Candle generateFrom(LocalDateTime nextSlot) {
         return new Candle(timeFrame, pair, nextSlot, close, close, close, close, close, 0, duplicatesCount, errorCount,
-                inversionCount);
+                inversionCount, history);
     }
 
     public Document toDocument() {
@@ -170,6 +186,11 @@ public class Candle {
         result.append(LOW_ATTR_NAME, Decimal128.parse(low.toPlainString()));
         result.append(CLOSE_ATTR_NAME, Decimal128.parse(close.toPlainString()));
         result.append(MID_ATTR_NAMR, Decimal128.parse(mid.toPlainString()));
+
+        history.entrySet().stream()
+                .sorted(comparing(o -> Integer.valueOf(o.getKey().substring(4))))
+                .forEach(entry -> result.append(entry.getKey(), Decimal128.parse(entry.getValue().toPlainString())));
+
         result.append(TICK_COUNT_ATTR_NAME, tickCount);
         result.append(DUPLICATES_COUNT_ATTR_NAME, duplicatesCount);
         result.append(ERROR_COUNT_ATTR_NAME, errorCount);
