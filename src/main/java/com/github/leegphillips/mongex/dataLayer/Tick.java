@@ -20,9 +20,11 @@ public class Tick {
     private final BigDecimal mid;
     private final boolean error;
     private final boolean inverted;
+    private final boolean interpolated;
 
-    private Tick(LocalDateTime timestamp, BigDecimal bid, BigDecimal ask) {
+    private Tick(LocalDateTime timestamp, BigDecimal bid, BigDecimal ask, boolean interpolated) {
         this.timestamp = timestamp;
+        this.interpolated = interpolated;
         this.inverted = bid.compareTo(ask) > 0;
         this.bid = inverted ? ask : bid;
         this.ask = inverted ? bid : ask;
@@ -34,7 +36,11 @@ public class Tick {
         LocalDateTime timestamp = LocalDateTime.parse(record.get(0), STR2DATE);
         BigDecimal ask = new BigDecimal(record.get(1).trim());
         BigDecimal bid = new BigDecimal(record.get(2).trim());
-        return new Tick(timestamp, bid, ask);
+        return new Tick(timestamp, bid, ask, false);
+    }
+
+    public static Tick createInterpolated(Tick tick, LocalDateTime timestamp) {
+        return new Tick(timestamp, tick.bid, tick.ask, true);
     }
 
     public LocalDateTime getTimestamp() {
@@ -59,5 +65,9 @@ public class Tick {
 
     public boolean isInverted() {
         return inverted;
+    }
+
+    public boolean isInterpolated() {
+        return interpolated;
     }
 }

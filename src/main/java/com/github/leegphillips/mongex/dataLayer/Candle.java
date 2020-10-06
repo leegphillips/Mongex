@@ -159,11 +159,11 @@ public class Candle {
         result.append(TimeFrame.ATTR_NAME, timeFrame.getLabel());
         result.append(CurrencyPair.ATTR_NAME, pair.getLabel());
         result.append(TIMESTAMP_ATTR_NAME, FORMATTER.format(timestamp));
-        result.append(OPEN_ATTR_NAME, open);
-        result.append(HIGH_ATTR_NAME, high);
-        result.append(LOW_ATTR_NAME, low);
-        result.append(CLOSE_ATTR_NAME, close);
-        result.append(MID_ATTR_NAMR, mid);
+        result.append(OPEN_ATTR_NAME, Decimal128.parse(open.toPlainString()));
+        result.append(HIGH_ATTR_NAME, Decimal128.parse(high.toPlainString()));
+        result.append(LOW_ATTR_NAME, Decimal128.parse(low.toPlainString()));
+        result.append(CLOSE_ATTR_NAME, Decimal128.parse(close.toPlainString()));
+        result.append(MID_ATTR_NAMR, Decimal128.parse(mid.toPlainString()));
         result.append(TICK_COUNT_ATTR_NAME, tickCount);
         result.append(DUPLICATES_COUNT_ATTR_NAME, duplicatesCount);
         result.append(ERROR_COUNT_ATTR_NAME, errorCount);

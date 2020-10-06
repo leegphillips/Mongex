@@ -116,7 +116,7 @@ public class FileListCandleLoader implements Runnable {
         }
     }
 
-    private class TickPadder implements Iterable<CSVRecord> {
+    private class TickPadder implements Iterable<Tick> {
 
         private final Iterable<CSVRecord> records;
 
@@ -125,16 +125,19 @@ public class FileListCandleLoader implements Runnable {
         }
 
         @Override
-        public Iterator<CSVRecord> iterator() {
-            return new Iterator<CSVRecord>() {
+        public Iterator<Tick> iterator() {
+
+            Iterator<CSVRecord> iterator = records.iterator();
+
+            return new Iterator<Tick>() {
                 @Override
                 public boolean hasNext() {
-                    return records.iterator().hasNext();
+                    return iterator.hasNext();
                 }
 
                 @Override
-                public CSVRecord next() {
-                    return records.iterator().next();
+                public Tick next() {
+                    return Tick.create(iterator.next());
                 }
             };
         }

@@ -1,7 +1,5 @@
 package com.github.leegphillips.mongex.dataLayer;
 
-import org.apache.commons.csv.CSVRecord;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,12 +9,12 @@ public class CandleBatcher implements Callable<List<Candle>> {
 
     private final CurrencyPair pair;
     private final CandleSpecification candleSpecification;
-    private final Iterable<CSVRecord> records;
+    private final Iterable<Tick> ticks;
 
-    public CandleBatcher(CurrencyPair pair, CandleSpecification candleSpecification, Iterable<CSVRecord> records) {
+    public CandleBatcher(CurrencyPair pair, CandleSpecification candleSpecification, Iterable<Tick> ticks) {
         this.pair = pair;
         this.candleSpecification = candleSpecification;
-        this.records = records;
+        this.ticks = ticks;
     }
 
     @Override
@@ -27,8 +25,7 @@ public class CandleBatcher implements Callable<List<Candle>> {
         LocalDateTime batchCeiling = null;
         TimeFrame tickSize = candleSpecification.getTickSize();
 
-        for (CSVRecord record : records) {
-            Tick tick = Tick.create(record);
+        for (Tick tick : ticks) {
             LocalDateTime time = tick.getTimestamp();
             if (batchFloor == null) {
                 batchFloor = candleSpecification.getFloor(tick.getTimestamp());
