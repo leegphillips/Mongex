@@ -32,7 +32,7 @@ public class CandleBatcher implements Callable<List<Candle>> {
                 batchCeiling = candleSpecification.getCeiling(batchFloor);
             }
 
-            if (!time.isBefore(batchCeiling)) {
+            if (time.compareTo(batchCeiling) > 0) {
                 candles.add(Candle.create(batch, pair, tickSize, batchCeiling));
                 batch = new ArrayList<>();
                 batchFloor = candleSpecification.getFloor(time);

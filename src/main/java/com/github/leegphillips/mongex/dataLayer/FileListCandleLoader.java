@@ -22,7 +22,6 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.Arrays.stream;
-import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 
 public class FileListCandleLoader implements Runnable {
@@ -37,7 +36,7 @@ public class FileListCandleLoader implements Runnable {
     private final AtomicInteger counter;
     private final TimeFrame timeFrame;
     private LocalDateTime chunkEnd;
-    private Candle pos;
+    private Tick pos;
 
     public static void main(String[] args) {
         ZipExtractor extractor = new ZipExtractor();
@@ -75,7 +74,7 @@ public class FileListCandleLoader implements Runnable {
                 List<Candle> candles = new ArrayList<>();
                 File csvFile = extractor.extractCSV(file);
                 try (CSVParser records = CSVFormat.DEFAULT.parse(new BufferedReader(new FileReader(csvFile)))) {
-                    candles.addAll(padMissingCandles(new CandleBatcher(pair, candleSpecification, new TickPadder(records)).call()));
+                    candles.addAll(new CandleBatcher(pair, candleSpecification, new TickPadder(records)).call());
                 }
                 csvFile.delete();
                 candlesCollection.insertMany(candles.stream().map(Candle::toDocument).collect(toList()));
@@ -84,35 +83,6 @@ public class FileListCandleLoader implements Runnable {
                 LOG.error("Error processing file: " + file.getName(), e);
                 break;
             }
-        }
-    }
-
-    private List<Candle> padMissingCandles(List<Candle> sparseCandles) {
-        List<Candle> fullCandles = new ArrayList<>();
-        for (Candle candle : sparseCandles) {
-            if (pos == null) {
-                pos = candle;
-            } else {
-                fill(candle, fullCandles, candle.getTimestamp());
-            }
-        }
-        fill(pos, fullCandles, chunkEnd);
-        fullCandles.addAll(sparseCandles);
-        fullCandles.sort(comparing(Candle::getTimestamp));
-        return fullCandles;
-    }
-
-    private void fill(Candle last, List<Candle> additions, LocalDateTime end) {
-        LocalDateTime nextSlot = timeFrame.next(pos.getTimestamp());
-        while (nextSlot.isBefore(end)) {
-            Candle generated = pos.generateFrom(nextSlot);
-            additions.add(generated);
-            nextSlot = timeFrame.next(nextSlot);
-            pos = generated;
-        }
-        if (pos.getTimestamp().isBefore(last.getTimestamp())) {
-            // the case when we come in with a mid stream tick
-            pos = last;
         }
     }
 
@@ -126,18 +96,31 @@ public class FileListCandleLoader implements Runnable {
 
         @Override
         public Iterator<Tick> iterator() {
-
             Iterator<CSVRecord> iterator = records.iterator();
 
             return new Iterator<Tick>() {
+                Tick next = Tick.create(iterator.next());
+
                 @Override
                 public boolean hasNext() {
-                    return iterator.hasNext();
+                    return pos == null || timeFrame.next(pos.getTimestamp()).isBefore(chunkEnd);
                 }
 
                 @Override
                 public Tick next() {
-                    return Tick.create(iterator.next());
+                    if (pos == null) {
+                        pos = next;
+                        next = iterator.hasNext() ? Tick.create(iterator.next()) : null;
+                    } else {
+                        LocalDateTime nextSlot = pos.isInterpolated() ? candleSpecification.getCeiling(pos.getTimestamp()) : timeFrame.next(candleSpecification.getFloor(pos.getTimestamp()));
+                        if (next == null || next.getTimestamp().compareTo(nextSlot) > 0) {
+                            pos = Tick.createInterpolated(pos, nextSlot);
+                        } else {
+                            pos = next;
+                            next = iterator.hasNext() ? Tick.create(iterator.next()) : null;
+                        }
+                    }
+                    return pos;
                 }
             };
         }

@@ -20,7 +20,7 @@ public class CandleDefinitionsTest {
                 LocalDateTime.parse("20200924 123000", formatter));
 
         assertEquals(CandleDefinitions.FIVE_MINUTES.getFloor(LocalDateTime.parse("20200924 123000", formatter)),
-                LocalDateTime.parse("20200924 123000", formatter));
+                LocalDateTime.parse("20200924 122500", formatter));
 
         assertEquals(CandleDefinitions.FIVE_MINUTES.getFloor(LocalDateTime.parse("20200924 123005", formatter)),
                 LocalDateTime.parse("20200924 123000", formatter));

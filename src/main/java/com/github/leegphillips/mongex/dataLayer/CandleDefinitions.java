@@ -37,9 +37,9 @@ public class CandleDefinitions {
 
         @Override
         public LocalDateTime getFloor(LocalDateTime time) {
-            LocalDateTime current = time.truncatedTo(ChronoUnit.HOURS);
+            LocalDateTime current = time.minusNanos(1).truncatedTo(ChronoUnit.HOURS);
             LocalDateTime next = getCeiling(current);
-            while (next.isBefore(time) || next.isEqual(time)) {
+            while (next.isBefore(time)) {
                 current = next;
                 next = getCeiling(current);
             }

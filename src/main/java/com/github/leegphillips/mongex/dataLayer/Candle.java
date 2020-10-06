@@ -118,7 +118,7 @@ public class Candle {
 
     private static Candle tickMapper(TimeFrame duration, CurrencyPair pair, Tick tick) {
         return new Candle(duration, pair, tick.getTimestamp(), tick.getMid(), tick.getMid(), tick.getMid(),
-                tick.getMid(), tick.getMid(), 1, 0, tick.isError() ? 1 : 0, tick.isInverted() ? 1 : 0);
+                tick.getMid(), tick.getMid(), tick.isInterpolated() ? 0 : 1, 0, tick.isError() ? 1 : 0, tick.isInverted() ? 1 : 0);
     }
 
     private static Candle combiner(Candle c1, Candle c2) {
@@ -137,7 +137,13 @@ public class Candle {
         LocalDateTime timestamp = c1IsBefore ? c2.timestamp : c1.timestamp;
         BigDecimal open = timestampCollision || c1IsBefore ? c1.open : c2.open;
         BigDecimal close = timestampCollision ? c1.close : c1IsBefore ? c2.close : c1.close;
-        BigDecimal mid = (c1.mid.multiply(BigDecimal.valueOf(c1.tickCount)).add(c2.mid.multiply(BigDecimal.valueOf(c2.tickCount)))).divide(BigDecimal.valueOf(tickCount), 4, RoundingMode.HALF_EVEN);
+        BigDecimal mid;
+        // still a gap where one has tickcount == 0
+        if (c1.tickCount == c2.tickCount) {
+            mid = c1.mid.add(c2.mid).divide(BigDecimal.valueOf(2));
+        } else {
+            mid = (c1.mid.multiply(BigDecimal.valueOf(c1.tickCount)).add(c2.mid.multiply(BigDecimal.valueOf(c2.tickCount)))).divide(BigDecimal.valueOf(tickCount), 4, RoundingMode.HALF_EVEN);
+        }
         int duplicates = c1.duplicatesCount + c2.duplicatesCount;
         if (timestampCollision)
             duplicates++;
