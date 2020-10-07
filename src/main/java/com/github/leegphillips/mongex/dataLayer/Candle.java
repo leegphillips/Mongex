@@ -115,8 +115,13 @@ public class Candle {
         int errorCount = doc.getInteger(ERROR_COUNT_ATTR_NAME);
         int inversionCount = doc.getInteger(INVERSION_COUNT_ATTR_NAME);
 
+        Map<String, BigDecimal> history = new HashMap<>();
+        doc.entrySet().stream()
+                .filter(entry -> entry.getKey().contains(SimpleMovingAverage.ATTR_NAME))
+                .forEach(entry -> history.put(entry.getKey(), ((Decimal128) entry.getValue()).bigDecimalValue()));
+
         return new Candle(timeframe, pair, timestamp, open, high, low, close, mid, tickCount, duplicatesCount,
-                errorCount, inversionCount, EMPTY_MAP);
+                errorCount, inversionCount, history);
     }
 
     public static Candle createForNotStarted(TimeFrame timeframe, CurrencyPair pair, LocalDateTime timestamp) {
@@ -167,12 +172,6 @@ public class Candle {
 
         return new Candle(c1.timeFrame, c1.pair, timestamp, open, high, low, close, mid, tickCount, duplicates, errorCount,
                 inversionCount, EMPTY_MAP);
-    }
-
-    // TODO add tests
-    public Candle generateFrom(LocalDateTime nextSlot) {
-        return new Candle(timeFrame, pair, nextSlot, close, close, close, close, close, 0, duplicatesCount, errorCount,
-                inversionCount, history);
     }
 
     public Document toDocument() {

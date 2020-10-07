@@ -1,5 +1,6 @@
 package com.github.leegphillips.mongex.dataLayer;
 
+import com.github.leegphillips.mongex.dataLayer.dao.CurrencyPairDAO;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -8,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 public class MarketAggregator {
@@ -39,11 +39,7 @@ public class MarketAggregator {
         MongoCollection<Document> candles = db.getCollection(CandleLoader.COLLECTION_NAME);
         FindIterable<Document> candleSeries = candles.find(new Document(TimeFrame.ATTR_NAME, timeFrame.getLabel())).sort(new Document(Candle.TIMESTAMP_ATTR_NAME, 1));
 
-        List<CurrencyPair> pairs = new ArrayList<>();
-        candles.distinct(CurrencyPair.ATTR_NAME, String.class)
-                .map(CurrencyPair::new)
-                .iterator()
-                .forEachRemaining(pairs::add);
+        List<CurrencyPair> pairs = new CurrencyPairDAO().getAll();
 
         Market market = new Market(pairs);
         LocalDateTime current = null;

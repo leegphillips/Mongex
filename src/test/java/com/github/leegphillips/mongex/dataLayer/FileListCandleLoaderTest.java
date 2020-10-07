@@ -43,7 +43,6 @@ public class FileListCandleLoaderTest {
     @Test
     public void happyPath() throws IOException {
         File zip1 = createZip("AUDCAD_T200709", "20070930 170004000, 0.8832, 0.8822, 0");
-//        File zip1 = createZip("AUDCAD_T200709", "20070930 234504000, 0.8832, 0.8822, 0");
         File zip2 = createZip("AUDCAD_T200710", "20071007 170005000, 0.8823, 0.8819, 0");
 
         new FileListCandleLoader(new ZipExtractor(), CandleDefinitions.FIVE_MINUTES,

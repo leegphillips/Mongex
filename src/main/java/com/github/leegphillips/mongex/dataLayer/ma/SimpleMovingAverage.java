@@ -5,8 +5,10 @@ import java.math.RoundingMode;
 
 public class SimpleMovingAverage extends MovingAverage {
 
+    public static final String ATTR_NAME = "sma ";
+
     public SimpleMovingAverage(int size) {
-        super("sma " + size, size);
+        super(ATTR_NAME + size, size);
     }
 
     @Override

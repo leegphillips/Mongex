@@ -1,5 +1,6 @@
 package com.github.leegphillips.mongex.dataLayer;
 
+import com.github.leegphillips.mongex.dataLayer.dao.CurrencyPairDAO;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -7,7 +8,6 @@ import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,15 +38,7 @@ public class FullCandleSeriesChecker {
 
     private void execute() {
         MongoCollection<Document> candles = db.getCollection(CandleLoader.COLLECTION_NAME);
-        List<CurrencyPair> pairs = new ArrayList<>();
-        candles.distinct(CurrencyPair.ATTR_NAME, String.class)
-                .map(CurrencyPair::new)
-                .iterator()
-                .forEachRemaining(pairs::add);
-
-        pairs.stream()
-                .forEach(currencyPair -> System.out.println(currencyPair.getLabel()));
-
+        List<CurrencyPair> pairs = new CurrencyPairDAO().getAll();
         counter.set(pairs.size());
 
         Stream<FindIterable<Document>> pairsSeries = pairs.parallelStream()

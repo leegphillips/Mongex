@@ -19,6 +19,7 @@ public class MongoDBAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
     public MongoDBAppender() {
         MongoDatabase db = DatabaseFactory.create(PropertiesSingleton.getInstance());
         logs = db.getCollection("logs");
+        logs.createIndex(new Document("timestamp", 1));
     }
 
     @Override

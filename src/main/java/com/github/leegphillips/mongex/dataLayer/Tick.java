@@ -1,7 +1,6 @@
 package com.github.leegphillips.mongex.dataLayer;
 
 import lombok.NonNull;
-import lombok.ToString;
 import org.apache.commons.csv.CSVRecord;
 
 import java.math.BigDecimal;
@@ -9,7 +8,6 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-@ToString
 public class Tick {
 
     private static final DateTimeFormatter STR2DATE = DateTimeFormatter.ofPattern("yyyyMMdd HHmmssSSS");
