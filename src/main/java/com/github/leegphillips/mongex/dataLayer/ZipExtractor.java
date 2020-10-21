@@ -7,7 +7,7 @@ import java.io.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-public class ZipExtractor {
+public class ZipExtractor implements AutoCloseable {
     private final static Logger LOG = LoggerFactory.getLogger(ZipExtractor.class);
 
     private final static String CSV_SUFFIX = ".csv";
@@ -40,5 +40,10 @@ public class ZipExtractor {
         }
 
         return csvFile;
+    }
+
+    @Override
+    public void close() throws Exception {
+
     }
 }

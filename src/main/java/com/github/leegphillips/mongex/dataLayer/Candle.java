@@ -138,7 +138,7 @@ public class Candle {
 
     private static Candle tickMapper(TimeFrame duration, CurrencyPair pair, Tick tick) {
         return new Candle(duration, pair, tick.getTimestamp(), tick.getMid(), tick.getMid(), tick.getMid(),
-                tick.getMid(), tick.getMid(), tick.isInterpolated() ? 0 : 1, 0, tick.isError() ? 1 : 0,
+                tick.getMid(), tick.getMid(), 0, 0, tick.isError() ? 1 : 0,
                 tick.isInverted() ? 1 : 0, EMPTY_MAP);
     }
 

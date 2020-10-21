@@ -77,7 +77,7 @@ public class FileListCandleLoader implements Runnable {
                 List<Candle> candles = new ArrayList<>();
                 File csvFile = extractor.extractCSV(file);
                 try (CSVParser records = CSVFormat.DEFAULT.parse(new BufferedReader(new FileReader(csvFile)))) {
-                    candles.addAll(new CandleBatcher(pair, candleSpecification, new TickPadder(records), sMAs).call());
+//                    candles.addAll(new CandleBatcher(pair, candleSpecification, new TickPadder(records), sMAs).call());
                 }
                 csvFile.delete();
                 candlesCollection.insertMany(candles.stream().map(Candle::toDocument).collect(toList()));
@@ -89,43 +89,43 @@ public class FileListCandleLoader implements Runnable {
         }
     }
 
-    private class TickPadder implements Iterable<Tick> {
-
-        private final Iterable<CSVRecord> records;
-
-        private TickPadder(Iterable<CSVRecord> records) {
-            this.records = records;
-        }
-
-        @Override
-        public Iterator<Tick> iterator() {
-            Iterator<CSVRecord> iterator = records.iterator();
-
-            return new Iterator<Tick>() {
-                Tick next = Tick.create(iterator.next());
-
-                @Override
-                public boolean hasNext() {
-                    return pos == null || timeFrame.next(pos.getTimestamp()).isBefore(chunkEnd);
-                }
-
-                @Override
-                public Tick next() {
-                    if (pos == null) {
-                        pos = next;
-                        next = iterator.hasNext() ? Tick.create(iterator.next()) : null;
-                    } else {
-                        LocalDateTime nextSlot = pos.isInterpolated() ? candleSpecification.getCeiling(pos.getTimestamp()) : timeFrame.next(candleSpecification.getFloor(pos.getTimestamp()));
-                        if (next == null || next.getTimestamp().compareTo(nextSlot) > 0) {
-                            pos = Tick.createInterpolated(pos, nextSlot);
-                        } else {
-                            pos = next;
-                            next = iterator.hasNext() ? Tick.create(iterator.next()) : null;
-                        }
-                    }
-                    return pos;
-                }
-            };
-        }
-    }
+//    private class TickPadder implements Iterable<Tick> {
+//
+//        private final Iterable<CSVRecord> records;
+//
+//        private TickPadder(Iterable<CSVRecord> records) {
+//            this.records = records;
+//        }
+//
+//        @Override
+//        public Iterator<Tick> iterator() {
+//            Iterator<CSVRecord> iterator = records.iterator();
+//
+//            return new Iterator<Tick>() {
+//                Tick next = Tick.create(iterator.next());
+//
+//                @Override
+//                public boolean hasNext() {
+//                    return pos == null || timeFrame.next(pos.getTimestamp()).isBefore(chunkEnd);
+//                }
+//
+//                @Override
+//                public Tick next() {
+//                    if (pos == null) {
+//                        pos = next;
+//                        next = iterator.hasNext() ? Tick.create(iterator.next()) : null;
+//                    } else {
+//                        LocalDateTime nextSlot = false ? candleSpecification.getCeiling(pos.getTimestamp()) : timeFrame.next(candleSpecification.getFloor(pos.getTimestamp()));
+//                        if (next == null || next.getTimestamp().compareTo(nextSlot) > 0) {
+//                            pos = Tick.createInterpolated(pos, nextSlot);
+//                        } else {
+//                            pos = next;
+//                            next = iterator.hasNext() ? Tick.create(iterator.next()) : null;
+//                        }
+//                    }
+//                    return pos;
+//                }
+//            };
+//        }
+//    }
 }
