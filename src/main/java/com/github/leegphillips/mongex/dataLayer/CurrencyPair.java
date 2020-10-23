@@ -4,12 +4,13 @@ import lombok.NonNull;
 import lombok.ToString;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.Objects;
 
 import static java.lang.String.format;
 
 @ToString
-public class CurrencyPair {
+public class CurrencyPair implements Serializable {
     public static final String ATTR_NAME = "pair";
 
     private final String label;

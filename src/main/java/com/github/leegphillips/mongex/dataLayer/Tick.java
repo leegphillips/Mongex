@@ -17,11 +17,13 @@ public class Tick {
     private final LocalDateTime timestamp;
     private final BigDecimal bid;
     private final BigDecimal ask;
+    private final CurrencyPair pair;
 
     private final boolean error;
     private final boolean inverted;
 
-    Tick(LocalDateTime timestamp, BigDecimal bid, BigDecimal ask) {
+    Tick(CurrencyPair pair, LocalDateTime timestamp, BigDecimal bid, BigDecimal ask) {
+        this.pair = pair;
         this.timestamp = timestamp;
         this.inverted = bid.compareTo(ask) > 0;
         this.bid = inverted ? ask : bid;
@@ -29,15 +31,11 @@ public class Tick {
         this.error = ask.compareTo(BigDecimal.ZERO) < 0 || bid.compareTo(BigDecimal.ZERO) < 0;
     }
 
-    public static Tick create(@NonNull String ts, @NonNull String a, @NonNull String b) {
+    public static Tick create(@NonNull CurrencyPair pair, @NonNull String ts, @NonNull String a, @NonNull String b) {
         LocalDateTime timestamp = LocalDateTime.parse(ts, STR2DATE);
         BigDecimal ask = new BigDecimal(a.trim());
         BigDecimal bid = new BigDecimal(b.trim());
-        return new Tick(timestamp, bid, ask);
-    }
-
-    public static Tick createInterpolated(Tick tick, LocalDateTime timestamp) {
-        return new Tick(timestamp, tick.bid, tick.ask);
+        return new Tick(pair, timestamp, bid, ask);
     }
 
     public LocalDateTime getTimestamp() {
@@ -62,5 +60,9 @@ public class Tick {
 
     public boolean isInverted() {
         return inverted;
+    }
+
+    public CurrencyPair getPair() {
+        return pair;
     }
 }
