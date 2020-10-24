@@ -7,8 +7,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.toList;
 
 @ToString
 public class Change implements Serializable {
@@ -21,33 +23,34 @@ public class Change implements Serializable {
         deltas.add(first);
     }
 
+    private Change(LocalDateTime timestamp, List<Delta> deltas) {
+        this.timestamp = timestamp;
+        this.deltas = deltas;
+        this.deltas.sort(comparing(o -> o.getPair().getLabel()));
+    }
+
     public void add(Delta delta) {
-        if (!deltas.stream().anyMatch(delta1 -> delta.getPair().equals(delta1))) {
+        if (!deltas.stream().anyMatch(delta1 -> delta.getPair().equals(delta1.getPair()))) {
             deltas.add(delta);
         }
     }
 
-    public void coalesce(Change latest) {
-        timestamp = latest.timestamp;
-        deltas.replaceAll(delta -> latest.deltas.stream()
-                                                    .filter(d -> delta.getPair().equals(d.getPair()))
-                                                    .findFirst()
-                                                    .orElse(delta));
+    public static Change coalesce(LocalDateTime timestamp, Change current, Change latest) {
+        List<Delta> deltas = new ArrayList<>();
+        deltas.addAll(latest.deltas);
+        deltas.addAll(current.deltas.stream().filter(d1 -> !deltas.stream().anyMatch(d2 -> d2.getPair().equals(d1.getPair()))).collect(toList()));
+        return new Change(timestamp, deltas);
+    }
+    public static Change coalesce(Change current, Change latest) {
+        LocalDateTime timestamp = latest.timestamp;
+        return coalesce(timestamp, current, latest);
+    }
 
-        List<Delta> toAdd = new ArrayList<>();
-        for (Delta d1 : latest.deltas) {
-            boolean add = true;
-            for (Delta d2 : deltas) {
-                if (d1.getPair().getLabel().equals(d2.getPair().getLabel())) {
-                    add = false;
-                    break;
-                }
-            }
-            if (add)
-                toAdd.add(d1);
-        }
-        deltas.addAll(toAdd);
+    public LocalDateTime getTimestamp() {
+        return timestamp;
+    }
 
-        deltas.sort(comparing(o -> o.getPair().getLabel()));
+    public void setTimestamp(LocalDateTime timestamp) {
+        this.timestamp = timestamp;
     }
 }

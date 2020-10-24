@@ -37,8 +37,7 @@ public class MarketStateIterable implements Iterable<Change>, Closeable {
 
             @Override
             public Change next() {
-                state.coalesce(iterator.next());
-                return state;
+                return Change.coalesce(state, iterator.next());
             }
         };
     }
