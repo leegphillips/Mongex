@@ -1,18 +1,14 @@
 package com.github.leegphillips.mongex.dataLayer;
 
-import lombok.ToString;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 
-@ToString
 public class Change implements Serializable {
     private LocalDateTime timestamp;
     private List<Delta> deltas;
@@ -26,7 +22,6 @@ public class Change implements Serializable {
     private Change(LocalDateTime timestamp, List<Delta> deltas) {
         this.timestamp = timestamp;
         this.deltas = deltas;
-        this.deltas.sort(comparing(o -> o.getPair().getLabel()));
     }
 
     public void add(Delta delta) {
@@ -52,5 +47,39 @@ public class Change implements Serializable {
 
     public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public List<Delta> getDeltas() {
+        return deltas;
+    }
+
+    @Override
+    public String toString() {
+        deltas.sort(comparing(o -> o.getPair().getLabel()));
+        return "Change{" +
+                "timestamp=" + timestamp +
+                ", deltas(" + deltas.size() + ")=" + deltas +
+                '}';
+    }
+
+    public String toCSV() {
+        StringBuilder builder = new StringBuilder();
+        builder.append(timestamp);
+        builder.append(", ");
+//        for (Delta d : deltas) {
+//            builder.append(d.getValue());
+//            builder.append(", ");
+//        }
+
+        Delta eurusd = deltas.stream().filter(delta -> delta.getPair().getLabel().equals("EURUSD")).findFirst().orElseThrow(IllegalStateException::new);
+        builder.append(eurusd.getValue());
+        builder.append(", ");
+
+        Delta usdchf = deltas.stream().filter(delta -> delta.getPair().getLabel().equals("USDCHF")).findFirst().orElseThrow(IllegalStateException::new);
+        builder.append(usdchf.getValue());
+        builder.append(", ");
+
+        builder.append("\n");
+        return builder.toString();
     }
 }

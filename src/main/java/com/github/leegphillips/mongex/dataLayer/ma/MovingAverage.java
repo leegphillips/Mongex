@@ -19,7 +19,7 @@ public abstract class MovingAverage {
     public void add(BigDecimal value) {
         window.add(value);
         if (window.size() > size)
-            window.removeLast();
+            window.removeFirst();
     }
 
     public String getName() {
@@ -27,4 +27,10 @@ public abstract class MovingAverage {
     }
 
     public abstract BigDecimal getValue();
+
+    @Override
+    public String toString() {
+        return "" + size +
+                ":" + getValue();
+    }
 }

@@ -1,12 +1,7 @@
 package com.github.leegphillips.mongex.dataLayer;
 
 import java.io.Closeable;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.time.LocalDateTime;
 import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class MarketStateIterable implements Iterable<Change>, Closeable {
 
@@ -42,7 +37,7 @@ public class MarketStateIterable implements Iterable<Change>, Closeable {
         };
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         new MarketStateIterable().iterator().forEachRemaining(state -> System.out.println(state));
     }
 }

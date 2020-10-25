@@ -1,8 +1,10 @@
 package com.github.leegphillips.mongex.dataLayer;
 
 import java.io.Closeable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.github.leegphillips.mongex.dataLayer.Change.coalesce;
 
@@ -23,6 +25,10 @@ public class TimeFrameMarketStateIterable implements Iterable<Change>, Closeable
         state = iterator.hasNext() ? iterator.next() : null;
         currentBlockEnd = tf.ceiling(state.getTimestamp());
         next = iterator.hasNext() ? iterator.next() : null;
+
+        Utils.getAllCurrencies()
+                .map(pair -> new Delta(pair, BigDecimal.ZERO))
+                .forEach(delta -> state.add(delta));
     }
 
     @Override
@@ -53,6 +59,7 @@ public class TimeFrameMarketStateIterable implements Iterable<Change>, Closeable
     }
 
     public static void main(String[] args) {
-        new TimeFrameMarketStateIterable(TimeFrame.ONE_WEEK).iterator().forEachRemaining(state -> System.out.println(state));
+        AtomicInteger counter = new AtomicInteger(0);
+        new TimeFrameMarketStateIterable(TimeFrame.ONE_DAY).iterator().forEachRemaining(state -> System.out.println(counter.incrementAndGet() + " " + state));
     }
 }
