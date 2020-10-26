@@ -1,10 +1,12 @@
 package com.github.leegphillips.mongex.dataLayer;
 
+import org.bson.Document;
+
 import java.io.Closeable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
@@ -12,11 +14,13 @@ import static java.util.stream.Collectors.toMap;
 public class AggregateState implements Iterable<AggregateState.FlatState>, Closeable {
 
     private final TimeFrameMarketStateIterable changes;
+    private final TimeFrame tf;
     private final Iterator<Change> iterator;
     private final Map<CurrencyPair, StreamState> states;
 
     public AggregateState(TimeFrame tf) {
         this.changes = new TimeFrameMarketStateIterable(tf);
+        this.tf = tf;
         this.iterator = changes.iterator();
         states = Utils.getAllCurrencies().map(StreamState::new).collect(toMap(StreamState::getPair, identity()));
     }
@@ -42,8 +46,8 @@ public class AggregateState implements Iterable<AggregateState.FlatState>, Close
                         .filter(delta -> delta.getValue().compareTo(BigDecimal.ZERO) > 0)
                         .forEach(delta -> states.get(delta.getPair()).update(delta));
 
-                Map<CurrencyPair, Map<Integer, BigDecimal>> snapshot = states.values().stream()
-                        .collect(toMap(StreamState::getPair, StreamState::getSnapshot));
+                Map<CurrencyPair, Map<Integer, BigDecimal>> snapshot = new TreeMap<>(states.values().stream()
+                        .collect(toMap(StreamState::getPair, StreamState::getSnapshot)));
 
                 return new FlatState(change.getTimestamp(), snapshot);
             }
@@ -63,6 +67,23 @@ public class AggregateState implements Iterable<AggregateState.FlatState>, Close
         public String toString() {
             return timestamp.plusNanos(1) +
                     " states=" + values;
+        }
+
+        public Document toDocument() {
+            Document doc = new Document();
+
+            doc.put(Candle.TIMESTAMP_ATTR_NAME, timestamp.toString());
+            doc.put(TimeFrame.ATTR_NAME, tf.getLabel());
+
+            for (Map.Entry<CurrencyPair, Map<Integer, BigDecimal>> entry : values.entrySet()) {
+                Map<String, BigDecimal> copy = entry.getValue().entrySet()
+                                                    .stream()
+                                                    .collect(toMap(a -> a.getKey().toString(), b -> b.getValue()));
+
+                doc.put(entry.getKey().getLabel(), copy);
+            }
+
+            return doc;
         }
     }
 

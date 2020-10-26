@@ -10,7 +10,7 @@ import java.util.Objects;
 import static java.lang.String.format;
 
 @ToString
-public class CurrencyPair implements Serializable {
+public class CurrencyPair implements Serializable, Comparable<CurrencyPair> {
     public static final String ATTR_NAME = "pair";
 
     private final String label;
@@ -40,5 +40,10 @@ public class CurrencyPair implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(label);
+    }
+
+    @Override
+    public int compareTo(CurrencyPair o) {
+        return label.compareTo(o.getLabel());
     }
 }
