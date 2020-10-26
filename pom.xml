@@ -20,11 +20,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.tensorflow</groupId>
-      <artifactId>tensorflow</artifactId>
-      <version>1.15.0</version>
-    </dependency>
-    <dependency>
       <groupId>org.mongodb</groupId>
       <artifactId>mongo-java-driver</artifactId>
       <version>3.12.7</version>
