@@ -2,7 +2,6 @@ package com.github.leegphillips.mongex.dataLayer;
 
 import lombok.NonNull;
 import lombok.ToString;
-import org.apache.commons.csv.CSVRecord;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

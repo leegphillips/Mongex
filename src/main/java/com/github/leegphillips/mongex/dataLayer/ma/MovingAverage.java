@@ -33,4 +33,8 @@ public abstract class MovingAverage {
         return "" + size +
                 ":" + getValue();
     }
+
+    public int getSize() {
+        return size;
+    }
 }

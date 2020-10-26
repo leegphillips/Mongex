@@ -2,7 +2,6 @@ package com.github.leegphillips.mongex.dataLayer;
 
 import java.io.Closeable;
 import java.io.File;
-import java.io.IOException;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;

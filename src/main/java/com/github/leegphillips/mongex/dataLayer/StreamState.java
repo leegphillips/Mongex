@@ -1,11 +1,15 @@
 package com.github.leegphillips.mongex.dataLayer;
 
+import com.github.leegphillips.mongex.dataLayer.ma.MovingAverage;
 import com.github.leegphillips.mongex.dataLayer.ma.SimpleMovingAverage;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 public class StreamState {
     private static final int[] MA_SIZES = {1, 2, 8, 34, 144, 610, 2584};
@@ -22,10 +26,6 @@ public class StreamState {
         return pair;
     }
 
-    public static void main(String[] args) {
-        StreamState streamState = new StreamState(null);
-    }
-
     public void update(Delta delta) {
         movingAverages.stream().forEach(ma -> ma.add(delta.getValue()));
     }
@@ -36,5 +36,9 @@ public class StreamState {
                 pair.getLabel() +
                 ", " + movingAverages +
                 '}';
+    }
+
+    public Map<Integer, BigDecimal> getSnapshot() {
+        return movingAverages.stream().collect(toMap(MovingAverage::getSize, MovingAverage::getValue));
     }
 }
