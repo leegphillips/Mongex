@@ -78,8 +78,7 @@ public class AggregateState implements Iterable<AggregateState.FlatState>, Close
 
         @Override
         public String toString() {
-            return timestamp.plusNanos(1) +
-                    " states=" + values;
+            return timestamp.plusNanos(1).toString();
         }
 
         public Document toDocument() {
