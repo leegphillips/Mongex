@@ -16,6 +16,6 @@ public class MongoLoader {
     public MongoLoader(Properties properties, MongoDatabase db, TimeFrame tf) {
         MongoCollection<Document> collection = db.getCollection("MAIN STREAM " + tf.getLabel());
         collection.createIndex(new Document(Candle.TIMESTAMP_ATTR_NAME, 1));
-        new AggregateState(TimeFrame.ONE_DAY).iterator().forEachRemaining(state -> collection.insertOne(state.toDocument()));
+        new AggregateState(TimeFrame.TEN_SECONDS).iterator().forEachRemaining(state -> collection.insertOne(state.toDocument()));
     }
 }
