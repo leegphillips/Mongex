@@ -24,7 +24,7 @@ public class AggregateState implements Iterable<AggregateState.FlatState>, Close
     private final Iterator<Change> iterator;
     private final Map<CurrencyPair, StreamState> states;
 
-    private AtomicInteger counter = new AtomicInteger(0);
+    private final AtomicInteger counter = new AtomicInteger(0);
 
     public AggregateState(TimeFrame tf) {
         this.changes = new TimeFrameMarketStateIterable(tf);
@@ -50,7 +50,7 @@ public class AggregateState implements Iterable<AggregateState.FlatState>, Close
             public FlatState next() {
                 Change change = iterator.next();
 
-                change.getDeltas().stream()
+                change.getDeltas().values().stream()
                         .filter(delta -> delta.getValue().compareTo(BigDecimal.ZERO) > 0)
                         .forEach(delta -> states.get(delta.getPair()).update(delta));
 
@@ -90,7 +90,7 @@ public class AggregateState implements Iterable<AggregateState.FlatState>, Close
             for (Map.Entry<CurrencyPair, Map<Integer, BigDecimal>> entry : values.entrySet()) {
                 Map<String, BigDecimal> copy = entry.getValue().entrySet()
                                                     .stream()
-                                                    .collect(toMap(a -> a.getKey().toString(), b -> b.getValue()));
+                                                    .collect(toMap(a -> a.getKey().toString(), Map.Entry::getValue));
 
                 doc.put(entry.getKey().getLabel(), copy);
             }

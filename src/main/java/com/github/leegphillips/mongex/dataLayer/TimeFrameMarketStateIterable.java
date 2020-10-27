@@ -4,9 +4,10 @@ import java.io.Closeable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 import static com.github.leegphillips.mongex.dataLayer.Change.coalesce;
+import static java.util.stream.Collectors.toMap;
 
 public class TimeFrameMarketStateIterable implements Iterable<Change>, Closeable {
 
@@ -22,13 +23,13 @@ public class TimeFrameMarketStateIterable implements Iterable<Change>, Closeable
         this.tf = tf;
         changes = new MarketStateIterable();
         iterator = changes.iterator();
-        state = iterator.hasNext() ? iterator.next() : null;
+
+        state = new Change(LocalDateTime.MIN, Utils.getAllCurrencies()
+                .map(pair -> new Delta(pair, BigDecimal.ZERO))
+                .collect(toMap(Delta::getPair, Function.identity())));
+
         currentBlockEnd = tf.ceiling(state.getTimestamp());
         next = iterator.hasNext() ? iterator.next() : null;
-
-        Utils.getAllCurrencies()
-                .map(pair -> new Delta(pair, BigDecimal.ZERO))
-                .forEach(delta -> state.add(delta));
     }
 
     @Override
@@ -42,12 +43,12 @@ public class TimeFrameMarketStateIterable implements Iterable<Change>, Closeable
         return new Iterator<Change>() {
             @Override
             public boolean hasNext() {
-                return iterator.hasNext();
+                return next != null;
             }
 
             @Override
             public Change next() {
-                while (next != null & next.getTimestamp().isBefore(currentBlockEnd)) {
+                while (next.getTimestamp().isBefore(currentBlockEnd)) {
                     state = coalesce(state, next);
                     next = iterator.hasNext() ? iterator.next() : null;
                 }
@@ -56,10 +57,5 @@ public class TimeFrameMarketStateIterable implements Iterable<Change>, Closeable
                 return state;
             }
         };
-    }
-
-    public static void main(String[] args) {
-        AtomicInteger counter = new AtomicInteger(0);
-        new TimeFrameMarketStateIterable(TimeFrame.ONE_DAY).iterator().forEachRemaining(state -> System.out.println(counter.incrementAndGet() + " " + state));
     }
 }

@@ -10,7 +10,7 @@ public class MongoLoader {
     public static void main(String[] args) {
         Properties properties = PropertiesSingleton.getInstance();
         MongoDatabase db = DatabaseFactory.create(properties);
-        new MongoLoader(properties, db, TimeFrame.TEN_SECONDS);
+        new MongoLoader(properties, db, TimeFrame.THIRTY_SECONDS);
     }
 
     public MongoLoader(Properties properties, MongoDatabase db, TimeFrame tf) {

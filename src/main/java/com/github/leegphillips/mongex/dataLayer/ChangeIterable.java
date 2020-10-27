@@ -5,7 +5,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ChangeIterable implements Iterable<Change>, Closeable {
@@ -38,16 +40,17 @@ public class ChangeIterable implements Iterable<Change>, Closeable {
             @Override
             public Change next() {
                 LocalDateTime timestamp = next.getTimestamp();
-                Change change = new Change(timestamp, new Delta(next.getPair(), next.getMid()));
+                List<Delta> deltas = new ArrayList<>();
+                deltas.add(new Delta(next.getPair(), next.getMid()));
                 while (iterator.hasNext()) {
                     next = iterator.next();
                     if (next.getTimestamp().compareTo(timestamp) == 0) {
-                        change.add(new Delta(next.getPair(), next.getMid()));
+                        deltas.add(new Delta(next.getPair(), next.getMid()));
                     } else {
                         break;
                     }
                 }
-                return change;
+                return new Change(timestamp, deltas);
             }
         };
     }
