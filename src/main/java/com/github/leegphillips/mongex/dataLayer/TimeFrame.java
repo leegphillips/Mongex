@@ -62,7 +62,7 @@ public enum TimeFrame {
     public LocalDateTime floor(LocalDateTime timestamp) {
         LocalDateTime base = timestamp.minusMonths(1).truncatedTo(ChronoUnit.DAYS);
         LocalDateTime next = next(base);
-        while (base.isBefore(timestamp)) {
+        while (base.compareTo(timestamp) <= 0) {
             if (next.isAfter(timestamp))
                 return base;
             base = next;

@@ -51,7 +51,7 @@ public class TickHistoryIterable implements Iterable<Tick>, Closeable {
     }
 
     public static void main(String[] args) {
-        new TickHistoryIterable(Utils.getAllCurrencies().findFirst().get())
+        new TickHistoryIterable(new CurrencyPair("EURUSD"))
                 .iterator()
                 .forEachRemaining(tick -> System.out.println(tick));
     }

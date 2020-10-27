@@ -1,13 +1,12 @@
 package com.github.leegphillips.mongex.dataLayer;
 
 import java.io.Closeable;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.function.Function;
+import java.util.List;
 
 import static com.github.leegphillips.mongex.dataLayer.Change.coalesce;
-import static java.util.stream.Collectors.toMap;
 
 public class TimeFrameMarketStateIterable implements Iterable<Change>, Closeable {
 
@@ -24,9 +23,7 @@ public class TimeFrameMarketStateIterable implements Iterable<Change>, Closeable
         changes = new MarketStateIterable();
         iterator = changes.iterator();
 
-        state = new Change(LocalDateTime.MIN, Utils.getAllCurrencies()
-                .map(pair -> new Delta(pair, BigDecimal.ZERO))
-                .collect(toMap(Delta::getPair, Function.identity())));
+        state = iterator.hasNext() ? iterator.next() : null;
 
         currentBlockEnd = tf.ceiling(state.getTimestamp());
         next = iterator.hasNext() ? iterator.next() : null;
@@ -48,10 +45,12 @@ public class TimeFrameMarketStateIterable implements Iterable<Change>, Closeable
 
             @Override
             public Change next() {
+                List<Change> changes = new ArrayList<>();
                 while (next.getTimestamp().isBefore(currentBlockEnd)) {
-                    state = coalesce(state, next);
+                    changes.add(next);
                     next = iterator.hasNext() ? iterator.next() : null;
                 }
+                state = coalesce(state, changes);
                 state.setTimestamp(currentBlockEnd);
                 currentBlockEnd = tf.next(currentBlockEnd);
                 return state;
