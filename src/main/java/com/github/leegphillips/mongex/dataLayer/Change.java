@@ -10,6 +10,10 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Stream.concat;
+import static java.util.stream.Stream.of;
+
 @ToString
 public class Change implements Serializable {
     private static final Logger LOG = LoggerFactory.getLogger(Change.class);
@@ -27,27 +31,26 @@ public class Change implements Serializable {
     public static Change coalesce(Change current, List<Change> latest) {
         Set<CurrencyPair> remaining = new HashSet<>(ALL);
 
+        List<Delta> deltas = concat(latest.stream(), of(current))
+                .sorted((o1, o2) -> o1.timestamp.compareTo(o2.timestamp) * -1)
+                .map(Change::getDeltas)
+                .map(Map::values)
+                .flatMap(Collection::stream)
+                .collect(toList());
+
         Map<CurrencyPair, Delta> updated = new TreeMap<>();
-        if (!latest.isEmpty()) {
-            for (int i = latest.size() - 1; i >= 0; i--) {
-                Change tail = latest.get(i);
-                for (Delta delta : tail.deltas.values()) {
-                    if (remaining.contains(delta.getPair())) {
-                        updated.put(delta.getPair(), delta);
-                        remaining.remove(delta.getPair());
-                    }
-                    if (remaining.size() == 0) {
-                        if (i > 0)
-                            LOG.info("Finish early optimisation: " + i);
-                        break;
-                    }
+
+        for (int i = 0; i < deltas.size(); i++) {
+            Delta delta = deltas.get(i);
+            if (remaining.contains(delta.getPair())) {
+                updated.put(delta.getPair(), delta);
+                remaining.remove(delta.getPair());
+                if (remaining.size() == 0) {
+                    LOG.info("Finish early optimisation: " + (deltas.size() - i));
+                    break;
                 }
             }
         }
-
-        current.deltas.values().stream()
-                .filter(delta -> !updated.containsKey(delta.getPair()))
-                .forEach(delta -> updated.put(delta.getPair(), delta));
 
         return new Change(latest.isEmpty() ? null : latest.get(latest.size() - 1).timestamp, updated);
     }

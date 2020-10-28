@@ -17,14 +17,16 @@ public class TickFileReader implements Iterable<Tick>, Closeable {
     private final ZipInputStream zis;
     private final BufferedReader br;
     private final CurrencyPair currencyPair;
+    private final File zip;
 
     public TickFileReader(File zip) {
         currencyPair = new CurrencyPair(zip);
+        this.zip = zip;
         try {
             this.zis = new ZipInputStream(new FileInputStream(zip));
             this.br = new BufferedReader(new InputStreamReader(zis), BUFFER_SIZE);
         } catch (FileNotFoundException e) {
-            throw new UncheckedIOException(e);
+            throw new UncheckedIOException(zip.getName(), e);
         }
     }
 
@@ -38,7 +40,7 @@ public class TickFileReader implements Iterable<Tick>, Closeable {
                 }
             }
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw new UncheckedIOException(zip.getName(), e);
         }
 
         return new Iterator<Tick>() {
@@ -47,7 +49,7 @@ public class TickFileReader implements Iterable<Tick>, Closeable {
                 try {
                     return zis.available() > 0;
                 } catch (IOException e) {
-                    throw new UncheckedIOException(e);
+                    throw new UncheckedIOException(zip.getName(), e);
                 }
             }
 
@@ -58,7 +60,7 @@ public class TickFileReader implements Iterable<Tick>, Closeable {
                     String[] values = line.split(",");
                     return Tick.create(currencyPair, values[0], values[1], values[2]);
                 } catch (IOException e) {
-                    throw new UncheckedIOException(e);
+                    throw new UncheckedIOException(zip.getName(), e);
                 }
             }
         };
