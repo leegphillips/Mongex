@@ -5,6 +5,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -20,7 +22,6 @@ public class TickFileReader extends ArrayBlockingQueue<Tick> {
     public TickFileReader(File zip) {
         super(SIZE);
         this.zip = zip;
-        new Thread(new Worker(), getClass().getSimpleName() + ":" + zip.getName()).start();
     }
 
     private class Worker implements Runnable {
