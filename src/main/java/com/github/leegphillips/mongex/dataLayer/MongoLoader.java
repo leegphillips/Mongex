@@ -33,7 +33,7 @@ public class MongoLoader {
         while (state != AggregateState.FlatState.POISON) {
             inserts.add(state.toDocument());
 
-            if (inserts.size() % 10000 == 0) {
+            if (inserts.size() % 5000 == 0) {
                 SERVICE.execute(new Inserter(collection, inserts));
                 inserts = new ArrayList<>();
             }
