@@ -1,41 +1,48 @@
 package com.github.leegphillips.mongex.dataLayer;
 
-import java.io.Closeable;
-import java.util.Iterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.ArrayBlockingQueue;
 
 import static java.util.Collections.singletonList;
 
-public class MarketStateIterable implements Iterable<Change>, Closeable {
+public class MarketStateIterable extends ArrayBlockingQueue<Change> {
+    private final static Logger LOG = LoggerFactory.getLogger(MarketStateIterable.class);
 
-    private final ChangeIterable changes;
-    private final Iterator<Change> iterator;
-
-    private Change state;
+    private final static int SIZE = 256;
 
     public MarketStateIterable() {
-        changes = new ChangeIterable();
-        iterator = changes.iterator();
-        state = iterator.hasNext() ? iterator.next() : null;
+        super(SIZE);
+        new Thread(new Worker(), getClass().getSimpleName()).start();
     }
 
-    @Override
-    public void close() {
-        changes.close();
+    private class Worker implements Runnable {
+
+        @Override
+        public void run() {
+            try {
+                ChangeIterable changes = new ChangeIterable();
+                Change next = changes.take();
+                Change state = next;
+                while (next != Change.POISON) {
+                    state = Change.coalesce(state, singletonList(changes.take()));
+                    LOG.trace(state.toString());
+                    put(state);
+                    next = changes.take();
+                }
+                put(Change.POISON);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
-    @Override
-    public Iterator<Change> iterator() {
-
-        return new Iterator<Change>() {
-            @Override
-            public boolean hasNext() {
-                return iterator.hasNext();
-            }
-
-            @Override
-            public Change next() {
-                return Change.coalesce(state, singletonList(iterator.next()));
-            }
-        };
+    public static void main(String[] args) throws InterruptedException {
+        MarketStateIterable changes = new MarketStateIterable();
+        Change change = changes.take();
+        while (change != Change.POISON) {
+            change = changes.take();
+        }
     }
 }

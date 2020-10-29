@@ -1,64 +1,60 @@
 package com.github.leegphillips.mongex.dataLayer;
 
-import java.io.Closeable;
-import java.io.File;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Properties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static java.util.Arrays.stream;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+
 import static java.util.stream.Collectors.toList;
 
-public class TickHistoryIterable implements Iterable<Tick>, Closeable {
-    private static final Properties PROPERTIES = PropertiesSingleton.getInstance();
+public class TickHistoryIterable extends ArrayBlockingQueue<Tick> {
+    private final static Logger LOG = LoggerFactory.getLogger(TickHistoryIterable.class);
 
-    private static final File[] FILES = new File(PROPERTIES.getProperty(PropertiesSingleton.SOURCE_DIR)).listFiles();
+    private final static int SIZE = 256;
 
     private final CurrencyPair pair;
-    private final List<TickFileReader> readers;
-    private final List<Iterator<Tick>> iterators;
 
     public TickHistoryIterable(CurrencyPair pair) {
+        super(SIZE);
         this.pair = pair;
-        this.readers = stream(FILES)
-                            .filter(file -> file.getName().contains(pair.getLabel()))
-                            .sorted(Comparator.naturalOrder())
-                            .map(TickFileReader::new)
-                            .collect(toList());
-        this.iterators = readers.stream()
-                            .map(TickFileReader::iterator)
-                            .collect(toList());
+        new Thread(new Worker(), getClass().getSimpleName() + ":" + pair.getLabel()).start();
     }
 
-    @Override
-    public Iterator<Tick> iterator() {
-        return new Iterator<Tick>() {
-            @Override
-            public boolean hasNext() {
-                return iterators.stream().anyMatch(iter -> iter.hasNext());
+    private class Worker implements Runnable {
+
+        @Override
+        public void run() {
+            try {
+                List<TickFileReader> readers = Arrays.stream(Utils.getFiles())
+                        .filter(file -> file.getName().contains(pair.getLabel()))
+                        .sorted(Comparator.naturalOrder())
+                        .map(TickFileReader::new)
+                        .collect(toList());
+
+                for (TickFileReader reader : readers) {
+                    Tick tick = reader.take();
+                    while (tick != Tick.POISON) {
+                        LOG.trace(tick.toString());
+                        put(tick);
+                        tick = reader.take();
+                    }
+                }
+                put(Tick.POISON);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
-
-            @Override
-            public Tick next() {
-                return iterators.stream()
-                        .filter(iter -> iter.hasNext())
-                        .findFirst()
-                        .orElseThrow(IllegalStateException::new)
-                        .next();
-            }
-        };
+        }
     }
 
-    public static void main(String[] args) {
-        new TickHistoryIterable(new CurrencyPair("EURUSD"))
-                .iterator()
-                .forEachRemaining(tick -> System.out.println(tick));
-    }
-
-    @Override
-    public void close() {
-        readers.stream().forEach(TickFileReader::close);
+    public static void main(String[] args) throws InterruptedException {
+        TickHistoryIterable eurusd = new TickHistoryIterable(new CurrencyPair("EURUSD"));
+        Tick tick = eurusd.take();
+        while (tick != Tick.POISON) {
+            tick = eurusd.take();
+        }
     }
 
     public CurrencyPair getPair() {

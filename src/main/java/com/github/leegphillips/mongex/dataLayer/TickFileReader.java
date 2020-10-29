@@ -4,80 +4,65 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.util.Iterator;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-public class TickFileReader implements Iterable<Tick>, Closeable {
+public class TickFileReader extends ArrayBlockingQueue<Tick> {
     private final static Logger LOG = LoggerFactory.getLogger(TickFileReader.class);
 
+    private final static int SIZE = 256;
     private final static String CSV_SUFFIX = ".csv";
     private final static int BUFFER_SIZE = 4096;
 
-    private final ZipInputStream zis;
-    private final BufferedReader br;
-    private final CurrencyPair currencyPair;
     private final File zip;
 
     public TickFileReader(File zip) {
-        currencyPair = new CurrencyPair(zip);
+        super(SIZE);
         this.zip = zip;
-        try {
-            this.zis = new ZipInputStream(new FileInputStream(zip));
-            this.br = new BufferedReader(new InputStreamReader(zis), BUFFER_SIZE);
-        } catch (FileNotFoundException e) {
-            throw new UncheckedIOException(zip.getName(), e);
-        }
+        new Thread(new Worker(), getClass().getSimpleName() + ":" + zip.getName()).start();
     }
 
-    @Override
-    public Iterator<Tick> iterator() {
-        try {
-            ZipEntry zipEntry = zis.getNextEntry();
-            while (zipEntry != null) {
-                if (zipEntry.getName().endsWith(CSV_SUFFIX)) {
-                    break;
-                }
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException(zip.getName(), e);
-        }
+    private class Worker implements Runnable {
+        @Override
+        public void run() {
+            try {
+                CurrencyPair currencyPair = new CurrencyPair(zip);
 
-        return new Iterator<Tick>() {
-            @Override
-            public boolean hasNext() {
-                try {
-                    return zis.available() > 0;
-                } catch (IOException e) {
-                    throw new UncheckedIOException(zip.getName(), e);
-                }
-            }
+                ZipInputStream zis = new ZipInputStream(new FileInputStream(zip));
+                BufferedReader br = new BufferedReader(new InputStreamReader(zis), BUFFER_SIZE);
 
-            @Override
-            public Tick next() {
-                try {
-                    String line = br.readLine();
+                ZipEntry zipEntry = zis.getNextEntry();
+                while (zipEntry != null) {
+                    if (zipEntry.getName().endsWith(CSV_SUFFIX)) {
+                        break;
+                    }
+                    zipEntry = zis.getNextEntry();
+                }
+
+                String line = br.readLine();
+                while (line != null) {
                     String[] values = line.split(",");
-                    return Tick.create(currencyPair, values[0], values[1], values[2]);
-                } catch (IOException e) {
-                    throw new UncheckedIOException(zip.getName(), e);
+                    Tick tick = Tick.create(currencyPair, values[0], values[1], values[2]);
+                    LOG.trace(tick.toString());
+                    put(tick);
+                    line = br.readLine();
                 }
+                put(Tick.POISON);
+                br.close();
+            } catch (IOException e) {
+                throw new UncheckedIOException(zip.getName(), e);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
-        };
+        }
     }
 
-    public static void main(String[] args) {
-        new TickFileReader(new File("C:\\Forex\\data\\HISTDATA_COM_ASCII_AUDCHF_T200811.zip"))
-                .iterator()
-                .forEachRemaining(tick -> System.out.println(tick));
-    }
-
-    @Override
-    public void close() {
-        try {
-            br.close();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+    public static void main(String[] args) throws InterruptedException {
+        TickFileReader ticks = new TickFileReader(new File("C:\\Forex\\data\\HISTDATA_COM_ASCII_AUDCHF_T200811.zip"));
+        Tick tick = ticks.take();
+        while (tick != Tick.POISON) {
+            tick = ticks.take();
         }
     }
 }

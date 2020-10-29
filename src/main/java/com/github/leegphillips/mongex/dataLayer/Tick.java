@@ -1,17 +1,16 @@
 package com.github.leegphillips.mongex.dataLayer;
 
 import lombok.NonNull;
-import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-@ToString
 public class Tick {
-
     private static final DateTimeFormatter STR2DATE = DateTimeFormatter.ofPattern("yyyyMMdd HHmmssSSS");
+
+    public final static Tick POISON = Tick.create(new CurrencyPair("POISON"), LocalDateTime.now().format(STR2DATE), "0", "0");
 
     private final LocalDateTime timestamp;
     private final BigDecimal bid;
@@ -63,5 +62,14 @@ public class Tick {
 
     public CurrencyPair getPair() {
         return pair;
+    }
+
+    @Override
+    public String toString() {
+        return "Tick{" +
+                "timestamp=" + timestamp +
+                ", mid=" + getMid() +
+                ", pair=" + pair +
+                '}';
     }
 }

@@ -26,4 +26,8 @@ public class Utils {
                 .distinct()
                 .map(CurrencyPair::new);
     }
+
+    public static File[] getFiles() {
+        return FILES;
+    }
 }

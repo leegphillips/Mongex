@@ -1,60 +1,62 @@
 package com.github.leegphillips.mongex.dataLayer;
 
-import java.io.Closeable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 import static com.github.leegphillips.mongex.dataLayer.Change.coalesce;
 
-public class TimeFrameMarketStateIterable implements Iterable<Change>, Closeable {
+public class TimeFrameMarketStateIterable extends ArrayBlockingQueue<Change> {
+    private final static Logger LOG = LoggerFactory.getLogger(TimeFrameMarketStateIterable.class);
 
-    private final MarketStateIterable changes;
-    private final Iterator<Change> iterator;
+    private final static int SIZE = 256;
+
     private final TimeFrame tf;
 
-    private Change state;
-    private LocalDateTime currentBlockEnd;
-    private Change next;
-
     public TimeFrameMarketStateIterable(TimeFrame tf) {
+        super(SIZE);
         this.tf = tf;
-        changes = new MarketStateIterable();
-        iterator = changes.iterator();
-
-        state = iterator.hasNext() ? iterator.next() : null;
-
-        currentBlockEnd = tf.ceiling(state.getTimestamp());
-        next = iterator.hasNext() ? iterator.next() : null;
+        new Thread(new Worker(), getClass().getSimpleName()).start();
     }
 
-    @Override
-    public void close() {
-        changes.close();
-    }
+    private class Worker implements Runnable {
 
-    @Override
-    public Iterator<Change> iterator() {
-
-        return new Iterator<Change>() {
-            @Override
-            public boolean hasNext() {
-                return next != null;
-            }
-
-            @Override
-            public Change next() {
+        @Override
+        public void run() {
+            try {
+                BlockingQueue<Change> input = new MarketStateIterable();
+                Change change = input.take();
                 List<Change> changes = new ArrayList<>();
-                while (next.getTimestamp().isBefore(currentBlockEnd)) {
-                    changes.add(next);
-                    next = iterator.hasNext() ? iterator.next() : null;
+                LocalDateTime currentBlockEnd = tf.ceiling(change.getTimestamp());
+                while (change != Change.POISON) {
+                    if (!change.getTimestamp().isBefore(currentBlockEnd)) {
+                        change = coalesce(change, changes);
+                        change.setTimestamp(currentBlockEnd);
+                        LOG.trace(change.toString());
+                        put(change);
+                        changes = new ArrayList<>();
+                        currentBlockEnd = tf.next(currentBlockEnd);
+                    }
+                    changes.add(change);
+                    change = input.take();
                 }
-                state = coalesce(state, changes);
-                state.setTimestamp(currentBlockEnd);
-                currentBlockEnd = tf.next(currentBlockEnd);
-                return state;
+                put(Change.POISON);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
-        };
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        BlockingQueue<Change> input = new TimeFrameMarketStateIterable(TimeFrame.FIVE_MINUTES);
+        Change change = input.take();
+        while (change != Change.POISON) {
+            change = input.take();
+        }
     }
 }

@@ -3,78 +3,57 @@ package com.github.leegphillips.mongex.dataLayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.time.LocalDateTime;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ArrayBlockingQueue;
 
-public class ChangeIterable implements Iterable<Change>, Closeable {
-
+public class ChangeIterable extends ArrayBlockingQueue<Change> {
     private final static Logger LOG = LoggerFactory.getLogger(ChangeIterable.class);
 
-    private final TickMarketIterable ticks;
-    private final Iterator<Tick> iterator;
-
-    private Tick next;
+    private final static int SIZE = 256;
 
     public ChangeIterable() {
-        ticks = new TickMarketIterable();
-        iterator = ticks.iterator();
-        next = iterator.hasNext() ? iterator.next() : null;
+        super(SIZE);
+        new Thread(new Worker(), getClass().getSimpleName()).start();
     }
 
-    @Override
-    public void close() {
-        ticks.close();
-    }
+    private class Worker implements Runnable {
 
-    @Override
-    public Iterator<Change> iterator() {
-
-        return new Iterator<Change>() {
-            @Override
-            public boolean hasNext() {
-                return next != null;
-            }
-
-            @Override
-            public Change next() {
-                LocalDateTime timestamp = next.getTimestamp();
-                Map<CurrencyPair, Delta> deltas = new TreeMap<>();
-                deltas.put(next.getPair(), new Delta(next.getPair(), next.getMid()));
-                while (iterator.hasNext()) {
-                    next = iterator.next();
-                    if (next.getTimestamp().compareTo(timestamp) == 0) {
-                        Delta prev = deltas.put(next.getPair(), new Delta(next.getPair(), next.getMid()));
-                        if (prev != null)
-                            LOG.trace("Duplicate: " + prev);
-                    } else {
-                        break;
-                    }
-                }
-                return new Change(timestamp, deltas);
-            }
-        };
-    }
-
-    public static void main(String[] args) throws IOException {
-        AtomicInteger count = new AtomicInteger(0);
-        ObjectOutputStream objectOutputStream = new ObjectOutputStream(new FileOutputStream("object.data"));
-        new ChangeIterable().iterator().forEachRemaining(delta -> {
+        @Override
+        public void run() {
             try {
-                objectOutputStream.writeObject(delta);
-                if (count.incrementAndGet() % 100000 == 0) {
-                    objectOutputStream.flush();
-                    System.out.println(count.get() + "   " + delta);
+                TickMarketIterable ticks = new TickMarketIterable();
+                Tick tick = ticks.take();
+                LocalDateTime timestamp = tick.getTimestamp();
+                Map<CurrencyPair, Delta> deltas = new TreeMap<>();
+                while (tick != Tick.POISON) {
+                    if (tick.getTimestamp().compareTo(timestamp) > 0) {
+                        Change change = new Change(timestamp, deltas);
+                        LOG.trace(change.toString());
+                        put(change);
+                        timestamp = tick.getTimestamp();
+                        deltas = new TreeMap<>();
+                        deltas.put(tick.getPair(), new Delta(tick.getPair(), tick.getMid()));
+                    }
+                    Delta prev = deltas.put(tick.getPair(), new Delta(tick.getPair(), tick.getMid()));
+                    if (prev != null)
+                        LOG.trace("Duplicate: " + prev);
+
+                    tick = ticks.take();
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
+                put(Change.POISON);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
-        });
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        ChangeIterable changes = new ChangeIterable();
+        Change change = changes.take();
+        while (change != Change.POISON) {
+            change = changes.take();
+        }
     }
 }

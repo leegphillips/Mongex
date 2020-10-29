@@ -1,70 +1,72 @@
 package com.github.leegphillips.mongex.dataLayer;
 
-import java.io.Closeable;
-import java.util.Comparator;
-import java.util.Iterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.function.Function;
 
-import static java.util.stream.Collectors.toList;
+import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toMap;
 
-public class TickMarketIterable implements Iterable<Tick>, Closeable {
+public class TickMarketIterable extends ArrayBlockingQueue<Tick> {
+    private final static Logger LOG = LoggerFactory.getLogger(TickMarketIterable.class);
 
-    private final List<TickHistoryIterable> histories;
-    private final Map<CurrencyPair, Iterator<Tick>> iterators;
-    private final List<Tick> nexts;
+    private final static int SIZE = 256;
 
     public TickMarketIterable() {
-        histories = Utils.getAllCurrencies()
+        super(SIZE);
+        new Thread(new Worker(), getClass().getSimpleName()).start();
+    }
+
+    private class Worker implements Runnable {
+        @Override
+        public void run() {
+            try {
+                Map<CurrencyPair, TickHistoryIterable> histories = Utils.getAllCurrencies()
                         .map(TickHistoryIterable::new)
-                        .collect(toList());
-        iterators = histories.stream()
-                        .collect(toMap(TickHistoryIterable::getPair, TickHistoryIterable::iterator));
-        nexts = iterators.values()
-                        .stream()
-                        .filter(Iterator::hasNext)
-                        .map(Iterator::next)
-                        .collect(toList());
-    }
+                        .collect(toMap(TickHistoryIterable::getPair, Function.identity()));
 
-    @Override
-    public void close() {
-        histories.stream().forEach(TickHistoryIterable::close);
-    }
+                List<Tick> nexts = new ArrayList<>();
+                for (TickHistoryIterable history : histories.values()) {
+                    nexts.add(history.take());
+                }
 
-    @Override
-    public Iterator<Tick> iterator() {
-        return new Iterator<Tick>() {
-            @Override
-            public boolean hasNext() {
-                return nexts.size() > 0;
+                while (nexts.size() > 0) {
+                    Tick next = nexts.stream()
+                            .sorted(comparing(Tick::getTimestamp))
+                            .findFirst()
+                            .orElseThrow(IllegalStateException::new);
+
+                    nexts.remove(next);
+
+                    TickHistoryIterable ticks = histories.get(next.getPair());
+                    Tick replacement = ticks.take();
+                    if (replacement == Tick.POISON) {
+                        histories.remove(ticks);
+                    } else {
+                        nexts.add(replacement);
+                    }
+
+                    LOG.trace(next.toString());
+                    put(next);
+                }
+
+                put(Tick.POISON);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
-
-            @Override
-            public Tick next() {
-                Tick next = nexts.stream()
-                                .sorted(Comparator.comparing(Tick::getTimestamp))
-                                .findFirst()
-                                .orElseThrow(IllegalStateException::new);
-
-                nexts.remove(next);
-
-                Iterator<Tick> iterator = iterators.entrySet().stream()
-                        .filter(entry -> entry.getKey().equals(next.getPair()))
-                        .findFirst()
-                        .orElseThrow(IllegalStateException::new)
-                        .getValue();
-
-                if (iterator.hasNext())
-                    nexts.add(iterator.next());
-
-                return next;
-            }
-        };
+        }
     }
 
-    public static void main(String[] args) {
-        new TickMarketIterable().iterator().forEachRemaining(tick -> System.out.println(tick));
+    public static void main(String[] args) throws InterruptedException {
+        TickMarketIterable ticks = new TickMarketIterable();
+        Tick tick = ticks.take();
+        while (tick != Tick.POISON) {
+            tick = ticks.take();
+        }
     }
 }

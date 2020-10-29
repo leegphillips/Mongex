@@ -4,70 +4,66 @@ import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 
-public class AggregateState implements Iterable<AggregateState.FlatState>, Closeable {
+public class AggregateState extends ArrayBlockingQueue<AggregateState.FlatState> {
 
     private final static Logger LOG = LoggerFactory.getLogger(AggregateState.class);
 
-    private final TimeFrameMarketStateIterable changes;
-    private final TimeFrame tf;
-    private final Iterator<Change> iterator;
-    private final Map<CurrencyPair, StreamState> states;
+    private final static int SIZE = 256;
 
     private final AtomicInteger counter = new AtomicInteger(0);
+    private final BlockingQueue<Change> input;
 
-    public AggregateState(TimeFrame tf) {
-        this.changes = new TimeFrameMarketStateIterable(tf);
-        this.tf = tf;
-        this.iterator = changes.iterator();
-        states = Utils.getAllCurrencies().map(StreamState::new).collect(toMap(StreamState::getPair, identity()));
+    public AggregateState(BlockingQueue<Change> input) {
+        super(SIZE);
+        this.input = input;
+        new Thread(new Worker(), getClass().getSimpleName()).start();
     }
 
-    @Override
-    public void close() {
-        changes.close();
-    }
+    private class Worker implements Runnable {
 
-    @Override
-    public Iterator<FlatState> iterator() {
-        return new Iterator<FlatState>() {
-            @Override
-            public boolean hasNext() {
-                return iterator.hasNext();
+        @Override
+        public void run() {
+            try {
+                Map<CurrencyPair, StreamState> states = Utils.getAllCurrencies().map(StreamState::new).collect(toMap(StreamState::getPair, identity()));
+                Change change = input.take();
+
+                while (change != Change.POISON) {
+
+                    change.getDeltas().values().stream()
+                            .filter(delta -> delta.getValue().compareTo(BigDecimal.ZERO) > 0)
+                            .forEach(delta -> states.get(delta.getPair()).update(delta));
+
+                    Map<CurrencyPair, Map<Integer, BigDecimal>> snapshot = new TreeMap<>(states.values().stream()
+                            .collect(toMap(StreamState::getPair, StreamState::getSnapshot)));
+
+                    FlatState flatState = new FlatState(change.getTimestamp(), snapshot);
+
+                    LOG.trace(flatState.toString());
+                    put(flatState);
+
+                    change = input.take();
+                }
+                put(FlatState.POISON);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
-
-            @Override
-            public FlatState next() {
-                Change change = iterator.next();
-
-                change.getDeltas().values().stream()
-                        .filter(delta -> delta.getValue().compareTo(BigDecimal.ZERO) > 0)
-                        .forEach(delta -> states.get(delta.getPair()).update(delta));
-
-                Map<CurrencyPair, Map<Integer, BigDecimal>> snapshot = new TreeMap<>(states.values().stream()
-                        .collect(toMap(StreamState::getPair, StreamState::getSnapshot)));
-
-                FlatState flatState = new FlatState(change.getTimestamp(), snapshot);
-
-                if (counter.incrementAndGet() % 100 == 0)
-                    LOG.info(flatState.toString());
-
-                return flatState;
-            }
-        };
+        }
     }
 
-    class FlatState {
+    static class FlatState {
+        final static FlatState POISON = new FlatState(null, null);
+
         private final LocalDateTime timestamp;
         private final Map<CurrencyPair, Map<Integer, BigDecimal>> values;
 
@@ -85,7 +81,6 @@ public class AggregateState implements Iterable<AggregateState.FlatState>, Close
             Document doc = new Document();
 
             doc.put(Candle.TIMESTAMP_ATTR_NAME, timestamp.toString());
-            doc.put(TimeFrame.ATTR_NAME, tf.getLabel());
 
             for (Map.Entry<CurrencyPair, Map<Integer, BigDecimal>> entry : values.entrySet()) {
                 Map<String, BigDecimal> copy = entry.getValue().entrySet()
@@ -99,7 +94,11 @@ public class AggregateState implements Iterable<AggregateState.FlatState>, Close
         }
     }
 
-    public static void main(String[] args) {
-        new AggregateState(TimeFrame.ONE_DAY).iterator().forEachRemaining(state -> System.out.println(state));
+    public static void main(String[] args) throws InterruptedException {
+        BlockingQueue<FlatState> input = new AggregateState(new TimeFrameMarketStateIterable(TimeFrame.ONE_DAY));
+        FlatState state = input.take();
+        while (state != FlatState.POISON) {
+            state = input.take();
+        }
     }
 }

@@ -18,6 +18,8 @@ import static java.util.stream.Stream.of;
 public class Change implements Serializable {
     private static final Logger LOG = LoggerFactory.getLogger(Change.class);
 
+    public static final Change POISON = new Change(null, null);
+
     private static final Set<CurrencyPair> ALL = Utils.getAllCurrencies().collect(Collectors.toSet());
 
     private LocalDateTime timestamp;
@@ -46,7 +48,8 @@ public class Change implements Serializable {
                 updated.put(delta.getPair(), delta);
                 remaining.remove(delta.getPair());
                 if (remaining.size() == 0) {
-                    LOG.info("Finish early optimisation: " + (deltas.size() - i));
+                    if (deltas.size() - i > 1)
+                        LOG.info("Finish early optimisation: " + (deltas.size() - i));
                     break;
                 }
             }
