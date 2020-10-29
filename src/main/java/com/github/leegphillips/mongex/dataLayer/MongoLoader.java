@@ -55,7 +55,7 @@ public class MongoLoader {
 
         @Override
         public void run() {
-            LOG.info(inserts.get(inserts.size() -1 ).toJson());
+            LOG.info(inserts.get(inserts.size() -1 ).get(Candle.TIMESTAMP_ATTR_NAME).toString());
             collection.insertMany(inserts);
         }
     }
