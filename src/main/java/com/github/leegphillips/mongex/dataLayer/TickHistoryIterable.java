@@ -35,12 +35,13 @@ public class TickHistoryIterable extends ArrayBlockingQueue<Tick> {
                         .collect(toList());
 
                 for (TickFileReader reader : readers) {
-                    Tick tick = reader.take();
-                    while (tick != Tick.POISON) {
+                    Tick tick = reader.readTick();
+                    while (tick != null) {
                         LOG.trace(tick.toString());
                         put(tick);
-                        tick = reader.take();
+                        tick = reader.readTick();
                     }
+                    reader.close();
                 }
                 put(Tick.POISON);
             } catch (InterruptedException e) {
