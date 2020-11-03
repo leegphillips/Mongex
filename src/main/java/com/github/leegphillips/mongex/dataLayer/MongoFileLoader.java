@@ -117,6 +117,7 @@ public class MongoFileLoader implements Runnable {
                     LOG.info("Records: " + recordCount);
                     LOG.info("Rate: " + rate + " record/s");
                     LOG.info("Files: " + filesCompleted.get());
+                    LOG.info("Running: " + running.get());
                     LOG.info("Filtered: " + filters.stream().mapToInt(TickTimeFrameFilter::getFiltered).sum());
                     LOG.info("Padded: " + padders.stream().mapToInt(TickPadder::getPadding).sum());
                     LOG.info("Queues:"
