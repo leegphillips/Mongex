@@ -20,7 +20,7 @@ public class MongoLoader {
 
     public static void main(String[] args) throws InterruptedException {
         Properties properties = PropertiesSingleton.getInstance();
-        MongoDatabase db = DatabaseFactory.create(properties);
+        MongoDatabase db = DatabaseFactory.create();
         new MongoLoader(properties, db, TimeFrame.THIRTY_SECONDS);
     }
 

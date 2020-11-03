@@ -20,8 +20,7 @@ public class CandleSeriesChecker implements Runnable {
 
     public static void main(String[] args) {
         long start = System.currentTimeMillis();
-        Properties properties = PropertiesSingleton.getInstance();
-        MongoDatabase db = DatabaseFactory.create(properties);
+        MongoDatabase db = DatabaseFactory.create();
         MongoCollection<Document> candles = db.getCollection(CandleLoader.COLLECTION_NAME);
         FindIterable<Document> pairSeries = candles.find(new Document(CurrencyPair.ATTR_NAME, new CurrencyPair(args[0]).getLabel()));
         new CandleSeriesChecker(pairSeries, TimeFrame.get(args[1]), new AtomicInteger()).run();

@@ -53,7 +53,7 @@ public class CSVExporter implements Runnable {
         private DocumentReader(BlockingQueue<Document> output) {
             this.output = output;
             Properties properties = PropertiesSingleton.getInstance();
-            MongoDatabase db = DatabaseFactory.create(properties);
+            MongoDatabase db = DatabaseFactory.create();
             MongoCollection<Document> collection = db.getCollection("MAIN STREAM 30s");
             this.states = collection.find().iterator();
         }
@@ -123,8 +123,7 @@ public class CSVExporter implements Runnable {
         public void run() {
             try {
                 while (true) {
-                    LOG.info("Queue size: " + (QUEUE_SIZE - pipe.remainingCapacity()));
-                    LOG.info("Lines written: " + COUNTER.get());
+                    LOG.info("Queue size: " + (QUEUE_SIZE - pipe.remainingCapacity()) + " Lines written: " + COUNTER.get());
                     Thread.sleep(5000);
                 }
             } catch (InterruptedException e) {

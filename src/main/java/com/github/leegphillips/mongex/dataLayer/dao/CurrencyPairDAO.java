@@ -14,7 +14,7 @@ public class CurrencyPairDAO {
     private final MongoCollection<Document> candles;
 
     public CurrencyPairDAO() {
-        this(DatabaseFactory.create(PropertiesSingleton.getInstance()).getCollection(CandleLoader.COLLECTION_NAME));
+        this(DatabaseFactory.create().getCollection(CandleLoader.COLLECTION_NAME));
     }
 
     CurrencyPairDAO(MongoCollection<Document> candles) {

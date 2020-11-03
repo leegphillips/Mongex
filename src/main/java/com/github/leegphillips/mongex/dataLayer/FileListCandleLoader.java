@@ -42,7 +42,7 @@ public class FileListCandleLoader implements Runnable {
     public static void main(String[] args) {
         ZipExtractor extractor = new ZipExtractor();
         Properties properties = PropertiesSingleton.getInstance();
-        MongoDatabase db = DatabaseFactory.create(properties);
+        MongoDatabase db = DatabaseFactory.create();
         MongoCollection<Document> candles = db.getCollection(CandleLoader.COLLECTION_NAME);
         File[] files = new File(properties.getProperty(PropertiesSingleton.SOURCE_DIR)).listFiles();
         List<File> filesForPair = stream(files).filter(file -> file.getName().contains(args[0])).collect(toList());

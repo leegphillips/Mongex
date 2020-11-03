@@ -20,7 +20,7 @@ public class Tick {
     private final boolean error;
     private final boolean inverted;
 
-    Tick(CurrencyPair pair, LocalDateTime timestamp, BigDecimal bid, BigDecimal ask) {
+    public Tick(CurrencyPair pair, LocalDateTime timestamp, BigDecimal bid, BigDecimal ask) {
         this.pair = pair;
         this.timestamp = timestamp;
         this.inverted = bid.compareTo(ask) > 0;

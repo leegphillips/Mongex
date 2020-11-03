@@ -33,7 +33,7 @@ public class CandleLoader {
 
     public static void main(String[] args) {
         Properties properties = PropertiesSingleton.getInstance();
-        MongoDatabase db = DatabaseFactory.create(properties);
+        MongoDatabase db = DatabaseFactory.create();
         new CandleLoader(properties, db, new ZipExtractor(), CandleDefinitions.FIVE_MINUTES).execute();
     }
 

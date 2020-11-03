@@ -26,7 +26,7 @@ public class MarketAggregator {
 
     public static void main(String[] args) {
         long start = System.currentTimeMillis();
-        new MarketAggregator(DatabaseFactory.create(PropertiesSingleton.getInstance()), TimeFrame.FIVE_MINUTES).execute();
+        new MarketAggregator(DatabaseFactory.create(), TimeFrame.FIVE_MINUTES).execute();
         LOG.info("Completed in " + (System.currentTimeMillis() - start) / 1000 + "s");
     }
 
