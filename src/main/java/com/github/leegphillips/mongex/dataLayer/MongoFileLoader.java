@@ -12,11 +12,11 @@ import java.io.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -41,22 +41,23 @@ public class MongoFileLoader implements Runnable {
             .toArray(CurrencyPair[]::new);
 
     private static final ExecutorService SERVICE = Executors.newCachedThreadPool();
+    private static final ScheduledExecutorService TIMED = Executors.newSingleThreadScheduledExecutor();
 
     private final TickMA END = new TickMA(null, null, null);
 
     private final long start = System.currentTimeMillis();
     private final AtomicInteger filesCompleted = new AtomicInteger(0);
-    private final AtomicInteger running = new AtomicInteger(66);
+    private final AtomicInteger running = new AtomicInteger();
 
     private final TimeFrame tf;
+
+    public MongoFileLoader(TimeFrame tf) {
+        this.tf = tf;
+    }
 
     public static void main(String[] args) {
         TimeFrame tf = TimeFrame.get(args[0]);
         new MongoFileLoader(tf).run();
-    }
-
-    public MongoFileLoader(TimeFrame tf) {
-        this.tf = tf;
     }
 
     @Override
@@ -65,6 +66,7 @@ public class MongoFileLoader implements Runnable {
                 .map(TickReader::new)
                 .collect(toList());
         readers.forEach(SERVICE::execute);
+        running.set(readers.size());
 
         List<TickTimeFrameFilter> filters = readers.stream()
                 .map(TickTimeFrameFilter::new)
@@ -86,7 +88,7 @@ public class MongoFileLoader implements Runnable {
                 .collect(toList());
         writers.forEach(SERVICE::execute);
 
-        SERVICE.execute(new Monitor(writers, trackers, padders, filters, readers));
+        TIMED.scheduleAtFixedRate(new Monitor(writers, trackers, padders, filters, readers), 5, 5, TimeUnit.SECONDS);
     }
 
     private class Monitor implements Runnable {
@@ -97,7 +99,7 @@ public class MongoFileLoader implements Runnable {
         private final List<TickTimeFrameFilter> filters;
         private final List<TickReader> readers;
 
-        private Monitor( List<MongoWriter> writers, List<TickMATracker> trackers, List<TickPadder> padders, List<TickTimeFrameFilter> filters, List<TickReader> readers) {
+        private Monitor(List<MongoWriter> writers, List<TickMATracker> trackers, List<TickPadder> padders, List<TickTimeFrameFilter> filters, List<TickReader> readers) {
             this.writers = writers;
             this.trackers = trackers;
             this.padders = padders;
@@ -107,29 +109,22 @@ public class MongoFileLoader implements Runnable {
 
         @Override
         public void run() {
-            try {
-                while (running.get() > 0) {
-                    long duration = ((System.currentTimeMillis() - start) / 1000) + 1;
-                    int recordCount = writers.stream().mapToInt(MongoWriter::getRecordsCount).sum();
-                    long rate = recordCount / duration;
-                    LOG.info("-----------------------------------------------------------------");
-                    LOG.info("Duration: " + duration + "s");
-                    LOG.info("Records: " + recordCount);
-                    LOG.info("Rate: " + rate + " record/s");
-                    LOG.info("Files: " + filesCompleted.get());
-                    LOG.info("Running: " + running.get());
-                    LOG.info("Filtered: " + filters.stream().mapToInt(TickTimeFrameFilter::getFiltered).sum());
-                    LOG.info("Padded: " + padders.stream().mapToInt(TickPadder::getPadding).sum());
-                    LOG.info("Queues:"
-                            + " Trackers: " + trackers.stream().mapToInt(tracker -> QUEUE_SIZE - tracker.remainingCapacity()).sum()
-                            + " Padders: " + padders.stream().mapToInt(padder -> QUEUE_SIZE - padder.remainingCapacity()).sum()
-                            + " Filters: " + filters.stream().mapToInt(filter -> QUEUE_SIZE - filter.remainingCapacity()).sum()
-                            + " Readers: " + readers.stream().mapToInt(reader -> QUEUE_SIZE - reader.remainingCapacity()).sum());
-                    Thread.sleep(5000);
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            long duration = ((System.currentTimeMillis() - start) / 1000) + 1;
+            int recordCount = writers.stream().mapToInt(MongoWriter::getRecordsCount).sum();
+            long rate = recordCount / duration;
+            LOG.info("-----------------------------------------------------------------");
+            LOG.info("Duration: " + duration + "s");
+            LOG.info("Records: " + recordCount);
+            LOG.info("Rate: " + rate + " record/s");
+            LOG.info("Files: " + filesCompleted.get());
+            LOG.info("Running: " + running.get());
+            LOG.info("Filtered: " + filters.stream().mapToInt(TickTimeFrameFilter::getFiltered).sum());
+            LOG.info("Padded: " + padders.stream().mapToInt(TickPadder::getPadding).sum());
+            LOG.info("Queues:"
+                    + " Trackers: " + trackers.stream().mapToInt(tracker -> QUEUE_SIZE - tracker.remainingCapacity()).sum()
+                    + " Padders: " + padders.stream().mapToInt(padder -> QUEUE_SIZE - padder.remainingCapacity()).sum()
+                    + " Filters: " + filters.stream().mapToInt(filter -> QUEUE_SIZE - filter.remainingCapacity()).sum()
+                    + " Readers: " + readers.stream().mapToInt(reader -> QUEUE_SIZE - reader.remainingCapacity()).sum());
         }
     }
 
@@ -260,7 +255,7 @@ public class MongoFileLoader implements Runnable {
         }
     }
 
-    private class TickMA {
+    private static class TickMA {
 
         private final CurrencyPair pair;
         private final LocalDateTime timestamp;
@@ -344,6 +339,7 @@ public class MongoFileLoader implements Runnable {
 
                 if (running.decrementAndGet() == 0) {
                     SERVICE.shutdown();
+                    TIMED.shutdown();
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
