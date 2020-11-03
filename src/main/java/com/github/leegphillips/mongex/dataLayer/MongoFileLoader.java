@@ -88,7 +88,7 @@ public class MongoFileLoader implements Runnable {
                 .collect(toList());
         writers.forEach(SERVICE::execute);
 
-        TIMED.scheduleAtFixedRate(new Monitor(writers, trackers, padders, filters, readers), 5, 5, TimeUnit.SECONDS);
+        TIMED.scheduleAtFixedRate(new Monitor(writers, trackers, padders, filters, readers), 50, 5, TimeUnit.SECONDS);
     }
 
     private class Monitor implements Runnable {
@@ -109,7 +109,7 @@ public class MongoFileLoader implements Runnable {
 
         @Override
         public void run() {
-            long duration = ((System.currentTimeMillis() - start) / 1000) + 1;
+            long duration = (System.currentTimeMillis() - start) / 1000;
             int recordCount = writers.stream().mapToInt(MongoWriter::getRecordsCount).sum();
             long rate = recordCount / duration;
             LOG.info("-----------------------------------------------------------------");
