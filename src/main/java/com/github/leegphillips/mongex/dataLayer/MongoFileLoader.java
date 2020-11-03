@@ -255,7 +255,7 @@ public class MongoFileLoader implements Runnable {
         }
     }
 
-    private static class TickMA {
+    private class TickMA {
 
         private final CurrencyPair pair;
         private final LocalDateTime timestamp;
