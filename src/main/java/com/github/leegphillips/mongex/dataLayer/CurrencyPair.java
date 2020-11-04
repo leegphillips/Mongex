@@ -10,6 +10,7 @@ import java.util.Objects;
 import static java.lang.String.format;
 
 @ToString
+// TODO change this to a list of static references
 public class CurrencyPair implements Serializable, Comparable<CurrencyPair> {
     public static final String ATTR_NAME = "pair";
 

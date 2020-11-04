@@ -1,5 +1,6 @@
 package com.github.leegphillips.mongex.dataLayer;
 
+import com.github.leegphillips.mongex.dataLayer.dao.State;
 import com.github.leegphillips.mongex.dataLayer.ma.MovingAverage;
 import com.github.leegphillips.mongex.dataLayer.ma.SimpleMovingAverage;
 import com.mongodb.client.MongoCollection;
@@ -11,23 +12,23 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import static com.github.leegphillips.mongex.dataLayer.dao.State.END;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
-public class MongoFileLoader implements Runnable {
-    private static final Logger LOG = LoggerFactory.getLogger(MongoFileLoader.class);
+public class MongexFileLoader implements Runnable {
+    private static final Logger LOG = LoggerFactory.getLogger(MongexFileLoader.class);
 
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    public static final int[] MA_SIZES = new int[]{1, 2, 8, 34, 144, 610, 2584};
 
     private static final int QUEUE_SIZE = 4096;
     private static final int BUFFER_SIZE = 4096;
@@ -43,21 +44,19 @@ public class MongoFileLoader implements Runnable {
     private static final ExecutorService SERVICE = Executors.newCachedThreadPool();
     private static final ScheduledExecutorService TIMED = Executors.newSingleThreadScheduledExecutor();
 
-    private final TickMA END = new TickMA(null, null, null);
-
     private final long start = System.currentTimeMillis();
     private final AtomicInteger filesCompleted = new AtomicInteger(0);
     private final AtomicInteger running = new AtomicInteger();
 
     private final TimeFrame tf;
 
-    public MongoFileLoader(TimeFrame tf) {
+    public MongexFileLoader(TimeFrame tf) {
         this.tf = tf;
     }
 
     public static void main(String[] args) {
         TimeFrame tf = TimeFrame.get(args[0]);
-        new MongoFileLoader(tf).run();
+        new MongexFileLoader(tf).run();
     }
 
     @Override
@@ -118,7 +117,7 @@ public class MongoFileLoader implements Runnable {
             LOG.info("Rate: " + rate + " record/s");
             LOG.info("Files: " + filesCompleted.get());
             LOG.info("Running: " + running.get());
-            LOG.info("Filtered: " + filters.stream().mapToInt(TickTimeFrameFilter::getFiltered).sum());
+            LOG.info("Filtered: " + filters.stream().mapToLong(TickTimeFrameFilter::getFiltered).sum());
             LOG.info("Padded: " + padders.stream().mapToInt(TickPadder::getPadding).sum());
             LOG.info("Queues:"
                     + " Trackers: " + trackers.stream().mapToInt(tracker -> QUEUE_SIZE - tracker.remainingCapacity()).sum()
@@ -181,7 +180,7 @@ public class MongoFileLoader implements Runnable {
     private class TickTimeFrameFilter extends ArrayBlockingQueue<Tick> implements Runnable {
 
         private final BlockingQueue<Tick> input;
-        private final AtomicInteger filtered = new AtomicInteger(0);
+        private final AtomicLong filtered = new AtomicLong(0);
 
         public TickTimeFrameFilter(BlockingQueue<Tick> input) {
             super(QUEUE_SIZE);
@@ -212,7 +211,7 @@ public class MongoFileLoader implements Runnable {
             }
         }
 
-        public int getFiltered() {
+        public long getFiltered() {
             return filtered.get();
         }
     }
@@ -255,38 +254,11 @@ public class MongoFileLoader implements Runnable {
         }
     }
 
-    private class TickMA {
-
-        private final CurrencyPair pair;
-        private final LocalDateTime timestamp;
-        private final Map<Integer, BigDecimal> values;
-
-        public TickMA(CurrencyPair pair, LocalDateTime timestamp, Map<Integer, BigDecimal> values) {
-            this.pair = pair;
-            this.timestamp = timestamp;
-            this.values = values;
-        }
-
-        public Document toDocument() {
-            Document doc = new Document();
-
-            doc.append(Candle.TIMESTAMP_ATTR_NAME, timestamp.format(FORMATTER));
-
-            values.forEach((key, value) -> doc.append(key.toString(), value));
-
-            return doc;
-        }
-
-        public CurrencyPair getPair() {
-            return pair;
-        }
-    }
-
     @ToString
-    private class TickMATracker extends ArrayBlockingQueue<TickMA> implements Runnable {
+    private class TickMATracker extends ArrayBlockingQueue<State> implements Runnable {
 
         private final BlockingQueue<Tick> input;
-        private final List<SimpleMovingAverage> sMAs = Arrays.stream(new int[]{1, 2, 8, 34, 144, 610, 2584}).mapToObj(SimpleMovingAverage::new).collect(toList());
+        private final List<SimpleMovingAverage> sMAs = Arrays.stream(MA_SIZES).mapToObj(SimpleMovingAverage::new).collect(toList());
 
         public TickMATracker(BlockingQueue<Tick> input) {
             super(QUEUE_SIZE);
@@ -300,7 +272,7 @@ public class MongoFileLoader implements Runnable {
                 while (tick != Tick.POISON) {
                     BigDecimal mid = tick.getMid();
                     sMAs.parallelStream().forEach(ma -> ma.add(mid));
-                    put(new TickMA(tick.getPair(), tick.getTimestamp(), sMAs.parallelStream().collect(toMap(MovingAverage::getSize, SimpleMovingAverage::getValue))));
+                    put(new State(tick.getPair(), tick.getTimestamp(), sMAs.parallelStream().collect(toMap(MovingAverage::getSize, SimpleMovingAverage::getValue))));
                     tick = input.take();
                 }
                 put(END);
@@ -312,10 +284,10 @@ public class MongoFileLoader implements Runnable {
 
     private class MongoWriter implements Runnable {
 
-        private final BlockingQueue<TickMA> input;
+        private final BlockingQueue<State> input;
         private final AtomicInteger recordsCount = new AtomicInteger(0);
 
-        public MongoWriter(BlockingQueue<TickMA> input) {
+        public MongoWriter(BlockingQueue<State> input) {
             this.input = input;
         }
 
@@ -323,7 +295,7 @@ public class MongoFileLoader implements Runnable {
         public void run() {
             try {
                 List<Document> updates = new ArrayList<>();
-                TickMA tick = input.take();
+                State tick = input.take();
                 MongoCollection<Document> stream = DatabaseFactory.getStream(tick.getPair(), tf);
                 while (tick != END) {
                     updates.add(tick.toDocument());
@@ -350,24 +322,4 @@ public class MongoFileLoader implements Runnable {
             return recordsCount.get();
         }
     }
-
-//    private class Debugger implements Runnable {
-//
-//        private final BlockingQueue<List<Tick>> input;
-//
-//        private Debugger(BlockingQueue<List<Tick>> input) {
-//            this.input = input;
-//        }
-//
-//        @Override
-//        public void run() {
-//            try {
-//                while (true) {
-//                    LOG.info(String.valueOf(input.take()));
-//                }
-//            } catch (InterruptedException e) {
-//                Thread.currentThread().interrupt();
-//            }
-//        }
-//    }
 }
