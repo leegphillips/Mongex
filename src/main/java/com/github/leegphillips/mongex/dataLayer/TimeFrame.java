@@ -44,14 +44,10 @@ public enum TimeFrame {
         return next.apply(timestamp);
     }
 
-    // :(
     public static TimeFrame get(@NonNull String label) {
-        Optional<TimeFrame> t = Arrays.stream(TimeFrame.class.getEnumConstants())
+        return Arrays.stream(TimeFrame.class.getEnumConstants())
                 .filter(tf -> tf.label.equals(label))
-                .findFirst();
-        if (t.isPresent())
-            return t.get();
-        throw new IllegalArgumentException("Searching for an non-existent value: " + label);
+                .findFirst().orElseThrow(() -> new IllegalArgumentException("Searching for an non-existent value: " + label));
     }
 
     @Override

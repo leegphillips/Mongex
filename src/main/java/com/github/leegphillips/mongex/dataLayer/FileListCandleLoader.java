@@ -67,7 +67,7 @@ public class FileListCandleLoader implements Runnable {
         for (File file : allFilesForPair) {
             try {
                 long start = System.currentTimeMillis();
-                CurrencyPair pair = new CurrencyPair(file);
+                CurrencyPair pair = CurrencyPair.get(file);
 
                 chunkEnd = LocalDateTime.parse(file.getName().substring(27, 33) + "010000", FORMATTER)
                         .plusMonths(1).minusNanos(1);

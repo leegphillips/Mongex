@@ -24,7 +24,7 @@ public class CurrencyPairDAO {
     public List<CurrencyPair> getAll() {
         List<CurrencyPair> pairs = new ArrayList<>();
         candles.distinct(CurrencyPair.ATTR_NAME, String.class)
-                .map(CurrencyPair::new)
+                .map(CurrencyPair::get)
                 .iterator()
                 .forEachRemaining(pairs::add);
         return pairs;

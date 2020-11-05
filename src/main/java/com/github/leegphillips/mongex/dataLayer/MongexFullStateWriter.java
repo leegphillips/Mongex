@@ -38,7 +38,7 @@ public class MongexFullStateWriter implements Runnable {
     private final TimeFrame tf;
 
     public static void main(String[] args) {
-        CurrencyPair pair = new CurrencyPair(args[0]);
+        CurrencyPair pair = CurrencyPair.get(args[0]);
         TimeFrame tf = TimeFrame.get(args[1]);
         new MongexFullStateWriter(pair, tf).run();
     }
@@ -51,7 +51,7 @@ public class MongexFullStateWriter implements Runnable {
     @Override
     public void run() {
         Map<CurrencyPair, MongoReader> readers = DatabaseFactory.getStreams(tf).entrySet().stream()
-                .collect(toMap(entry -> new CurrencyPair(entry.getKey()), entry -> new MongoReader(entry.getValue())));
+                .collect(toMap(entry -> CurrencyPair.get(entry.getKey()), entry -> new MongoReader(entry.getValue())));
         readers.values().forEach(SERVICE::execute);
 
         Map<CurrencyPair, Convertor> convertors = readers.entrySet().stream()

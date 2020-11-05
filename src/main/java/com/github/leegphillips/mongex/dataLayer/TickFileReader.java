@@ -21,7 +21,7 @@ public class TickFileReader implements Closeable {
         this.zip = zip;
 
         try {
-            currencyPair = new CurrencyPair(zip);
+            currencyPair = CurrencyPair.get(zip);
 
             ZipInputStream zis = new ZipInputStream(new FileInputStream(zip));
             br = new BufferedReader(new InputStreamReader(zis), BUFFER_SIZE);

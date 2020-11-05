@@ -103,7 +103,7 @@ public class Candle {
 
     public static Candle create(@NonNull Document doc) {
         TimeFrame timeframe = TimeFrame.get(doc.getString(TimeFrame.ATTR_NAME));
-        CurrencyPair pair = new CurrencyPair(doc.getString(CurrencyPair.ATTR_NAME));
+        CurrencyPair pair = CurrencyPair.get(doc.getString(CurrencyPair.ATTR_NAME));
         LocalDateTime timestamp = LocalDateTime.parse(doc.getString(TIMESTAMP_ATTR_NAME), FORMATTER);
         BigDecimal open = doc.get(OPEN_ATTR_NAME, Decimal128.class).bigDecimalValue();
         BigDecimal high = doc.get(HIGH_ATTR_NAME, Decimal128.class).bigDecimalValue();

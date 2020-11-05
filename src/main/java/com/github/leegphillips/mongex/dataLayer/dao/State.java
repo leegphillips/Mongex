@@ -44,7 +44,7 @@ public class State {
 
     public static State fromDocument(Document doc) {
         LocalDateTime timestamp = LocalDateTime.parse(doc.getString(Candle.TIMESTAMP_ATTR_NAME), FORMATTER);
-        CurrencyPair pair = new CurrencyPair(doc.getString(INSTRUMENT_ATTR_NAME));
+        CurrencyPair pair = CurrencyPair.get(doc.getString(INSTRUMENT_ATTR_NAME));
 
         Document smas = doc.get(SMA_ATTR_NAME, Document.class);
         Map<Integer, BigDecimal> values = smas.keySet().stream()

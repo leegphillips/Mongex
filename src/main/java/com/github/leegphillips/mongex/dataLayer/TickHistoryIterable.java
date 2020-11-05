@@ -51,7 +51,7 @@ public class TickHistoryIterable extends ArrayBlockingQueue<Tick> {
     }
 
     public static void main(String[] args) throws InterruptedException {
-        TickHistoryIterable eurusd = new TickHistoryIterable(new CurrencyPair("EURUSD"));
+        TickHistoryIterable eurusd = new TickHistoryIterable(CurrencyPair.get("EURUSD"));
         Tick tick = eurusd.take();
         while (tick != Tick.POISON) {
             tick = eurusd.take();

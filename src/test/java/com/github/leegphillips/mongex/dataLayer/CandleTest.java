@@ -19,7 +19,7 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class CandleTest {
 
-    CurrencyPair pair = new CurrencyPair("AUDJPY");
+    CurrencyPair pair = CurrencyPair.get("AUDJPY");
 
     @Mock
     Tick tick1;

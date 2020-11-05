@@ -55,7 +55,7 @@ public class DatabaseFactory {
         Map<String, MongoCollection<Document>> result = names.stream()
                 .collect(toMap(Function.identity(), database::getCollection))
                 .entrySet().stream()
-                .collect(toMap(entry -> entry.getKey().substring(0, 6), entry -> entry.getValue()));
+                    .collect(toMap(entry -> entry.getKey().substring(0, 6), entry -> entry.getValue()));
 
         return result;
     }

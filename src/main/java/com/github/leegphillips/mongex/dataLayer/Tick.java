@@ -10,7 +10,7 @@ import java.time.format.DateTimeFormatter;
 public class Tick {
     private static final DateTimeFormatter STR2DATE = DateTimeFormatter.ofPattern("yyyyMMdd HHmmssSSS");
 
-    public final static Tick POISON = Tick.create(new CurrencyPair("POISON"), LocalDateTime.now().format(STR2DATE), "0", "0");
+    public final static Tick POISON = Tick.create(CurrencyPair.get("POISON"), LocalDateTime.now().format(STR2DATE), "0", "0");
 
     private final LocalDateTime timestamp;
     private final BigDecimal bid;

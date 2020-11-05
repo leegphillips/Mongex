@@ -8,22 +8,22 @@ import org.mockito.junit.MockitoJUnitRunner;
 public class CurrencyPairTest {
     @Test
     public void happyPath() {
-        new CurrencyPair("AUDJPY");
+        CurrencyPair.get("AUDJPY");
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test(expected = NullPointerException.class)
     public void cannotCreateWithNull() {
-        new CurrencyPair((String) null);
+        CurrencyPair.get((String) null);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void cannotCreateWithTooShort() {
-        new CurrencyPair("GBP");
+        CurrencyPair.get("GBP");
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void cannotCreateWithTooLong() {
-        new CurrencyPair("CADUSDD");
+        CurrencyPair.get("CADUSDD");
     }
 }

@@ -24,7 +24,7 @@ public class Utils {
                 .map(File::getName)
                 .map(name -> name.substring(19, 25))
                 .distinct()
-                .map(CurrencyPair::new);
+                .map(CurrencyPair::get);
     }
 
     public static File[] getFiles() {

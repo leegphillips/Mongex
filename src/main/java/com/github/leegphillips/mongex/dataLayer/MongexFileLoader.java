@@ -37,7 +37,7 @@ public class MongexFileLoader implements Runnable {
     private static final String CSV_SUFFIX = ".csv";
 
     private static final File[] FILES = Utils.getFiles();
-    private static final CurrencyPair[] PAIRS = Arrays.stream(FILES).map(CurrencyPair::new)
+    private static final CurrencyPair[] PAIRS = Arrays.stream(FILES).map(CurrencyPair::get)
             .distinct()
             .toArray(CurrencyPair[]::new);
 
