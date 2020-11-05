@@ -3,18 +3,13 @@ package com.github.leegphillips.mongex.dataLayer;
 import com.github.leegphillips.mongex.dataLayer.dao.State;
 import com.mongodb.client.MongoCollection;
 import org.bson.Document;
-import org.bson.types.Decimal128;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.github.leegphillips.mongex.dataLayer.MongexFileLoader.MA_SIZES;
@@ -24,79 +19,86 @@ import static java.util.stream.Collectors.toMap;
 public class MongexFullStateWriter implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(MongexFullStateWriter.class);
 
+    private static final String VALUES_ATTR = "values";
+
     private static final ExecutorService SERVICE = Executors.newCachedThreadPool();
     private static final ScheduledExecutorService TIMED = Executors.newSingleThreadScheduledExecutor();
 
-    private static final int QUEUE_SIZE = 4096;
+    private static final int QUEUE_SIZE = 32;
     private static final Document END = new Document();
     private static final List<State> CLOSE = new ArrayList<>();
 
     private final long start = System.currentTimeMillis();
-    private final AtomicInteger lines = new AtomicInteger(0);
 
-    private final CurrencyPair pair;
     private final TimeFrame tf;
 
     public static void main(String[] args) {
-        CurrencyPair pair = CurrencyPair.get(args[0]);
-        TimeFrame tf = TimeFrame.get(args[1]);
-        new MongexFullStateWriter(pair, tf).run();
+        TimeFrame tf = TimeFrame.get(args[0]);
+        new MongexFullStateWriter(tf).run();
     }
 
-    public MongexFullStateWriter(CurrencyPair pair, TimeFrame tf) {
-        this.pair = pair;
+    public MongexFullStateWriter(TimeFrame tf) {
         this.tf = tf;
     }
 
     @Override
     public void run() {
-        Map<CurrencyPair, MongoReader> readers = DatabaseFactory.getStreams(tf).entrySet().stream()
+        Map<CurrencyPair, MongoReader> readers = DatabaseFactory.getIndividualStreams(tf).entrySet().stream()
                 .collect(toMap(entry -> CurrencyPair.get(entry.getKey()), entry -> new MongoReader(entry.getValue())));
         readers.values().forEach(SERVICE::execute);
 
         Map<CurrencyPair, Convertor> convertors = readers.entrySet().stream()
-                .collect(toMap(entry -> entry.getKey(), entry -> new Convertor(entry.getValue())));
+                .collect(toMap(Map.Entry::getKey, entry -> new Convertor(entry.getValue())));
         convertors.values().forEach(SERVICE::execute);
 
-        Aggregator aggregator = new Aggregator(convertors.entrySet().stream().collect(toMap(entry -> entry.getKey(), entry -> entry.getValue())));
+        Aggregator aggregator = new Aggregator(convertors.entrySet().stream().collect(toMap(Map.Entry::getKey, Map.Entry::getValue)));
         SERVICE.execute(aggregator);
 
         FullState fullState = new FullState(aggregator);
         SERVICE.execute(fullState);
 
-        FileCSVWriter writer = new FileCSVWriter(fullState);
+        MongoWriter writer = new MongoWriter(fullState);
         SERVICE.execute(writer);
 
-//        FileCSVWriter writer = new FileCSVWriter(reader);
-//        SERVICE.execute(writer);
-
-//        TIMED.scheduleAtFixedRate(new Monitor(reader, writer), 5, 5, TimeUnit.SECONDS);
+        TIMED.scheduleAtFixedRate(new Monitor(readers, convertors, aggregator, fullState, writer), 5, 5, TimeUnit.SECONDS);
     }
 
     private class Monitor implements Runnable {
 
-        private final MongoReader reader;
-        private final FileCSVWriter writer;
+        private final List<MongoReader> readers;
+        private final List<Convertor> convertors;
+        private final Aggregator aggregator;
+        private final FullState fullState;
+        private final MongoWriter writer;
 
-        public Monitor(MongoReader reader, FileCSVWriter writer) {
-            this.reader = reader;
+        public Monitor(Map<CurrencyPair, MongoReader> readers, Map<CurrencyPair, Convertor> convertors, Aggregator aggregator, FullState fullState, MongoWriter writer) {
+            this.readers = new ArrayList<>(readers.values());
+            this.convertors = new ArrayList<>(convertors.values());
+            this.aggregator = aggregator;
+            this.fullState = fullState;
             this.writer = writer;
         }
 
         @Override
         public void run() {
             long duration = (System.currentTimeMillis() - start) / 1000;
+            long records = writer.getRecords();
+            long rate = records/duration;
             LOG.info("-----------------------------------------------------------------");
             LOG.info("Duration: " + duration + "s");
-            LOG.info("Lines: " + lines.get());
-            LOG.info("Remaining: " + reader.getRemaining());
+            LOG.info("Records: " + records);
+            LOG.info("Rate: " + rate + " record/s");
+            LOG.info("Remaining: " + readers.stream().mapToLong(MongoReader::getRemaining).sum());
+            LOG.info("Last: " + writer.getLast());
             LOG.info("Queues:"
-                    + " Reader: " + (QUEUE_SIZE - reader.remainingCapacity()));
-
+                    + " Convertors: " + readers.stream().mapToInt(tracker -> QUEUE_SIZE - tracker.remainingCapacity()).sum()
+                    + " Aggregator: " + convertors.stream().mapToInt(tracker -> QUEUE_SIZE - tracker.remainingCapacity()).sum()
+                    + " Full state: " + (QUEUE_SIZE - aggregator.remainingCapacity())
+                    + " Writer: " + (QUEUE_SIZE - fullState.remainingCapacity()));
         }
     }
 
-    private class MongoReader extends ArrayBlockingQueue<Document> implements Runnable {
+    private static class MongoReader extends ArrayBlockingQueue<Document> implements Runnable {
 
         private final AtomicLong remaining = new AtomicLong();
         private final MongoCollection<Document> stream;
@@ -125,7 +127,7 @@ public class MongexFullStateWriter implements Runnable {
         }
     }
 
-    private class Convertor extends WrappedBlockingQueue<State> implements Runnable {
+    private static class Convertor extends WrappedBlockingQueue<State> implements Runnable {
 
         private final BlockingQueue<Document> input;
 
@@ -149,7 +151,7 @@ public class MongexFullStateWriter implements Runnable {
         }
     }
 
-    private class Aggregator extends ArrayBlockingQueue<List<State>> implements Runnable {
+    private static class Aggregator extends ArrayBlockingQueue<List<State>> implements Runnable {
 
         private final Map<CurrencyPair, WrappedBlockingQueue<State>> inputs;
 
@@ -162,7 +164,7 @@ public class MongexFullStateWriter implements Runnable {
         public void run() {
             try {
                 Map<CurrencyPair, State> nexts = inputs.entrySet().stream()
-                        .collect(toMap(entry -> entry.getKey(), entry -> entry.getValue().take()));
+                        .collect(toMap(Map.Entry::getKey, entry -> entry.getValue().take()));
 
                 while (nexts.size() > 0) {
                     List<CurrencyPair> finished = nexts.entrySet().stream()
@@ -174,8 +176,8 @@ public class MongexFullStateWriter implements Runnable {
                     finished.forEach(nexts::remove);
 
                     State first = nexts.values().stream()
-                            .sorted(Comparator.comparing(State::getTimestamp))
-                            .findFirst().orElseThrow(IllegalStateException::new);
+                            .min(Comparator.comparing(State::getTimestamp))
+                            .orElseThrow(IllegalStateException::new);
 
                     List<State> same = nexts.values().stream()
                             .filter(state -> state.getTimestamp().isEqual(first.getTimestamp()))
@@ -194,7 +196,7 @@ public class MongexFullStateWriter implements Runnable {
         }
     }
 
-    private class FullState extends ArrayBlockingQueue<List<State>> implements Runnable {
+    private static class FullState extends ArrayBlockingQueue<List<State>> implements Runnable {
 
         private final BlockingQueue<List<State>> input;
 
@@ -225,87 +227,63 @@ public class MongexFullStateWriter implements Runnable {
         }
     }
 
-    private class FileCSVWriter implements Runnable {
+    private class MongoWriter implements Runnable {
 
         private final BlockingQueue<List<State>> input;
+        private final AtomicLong records = new AtomicLong(0);
+        private String last = "";
 
-        public FileCSVWriter(BlockingQueue<List<State>> input) {
+        public MongoWriter(BlockingQueue<List<State>> input) {
             this.input = input;
         }
+
         @Override
         public void run() {
+            MongoCollection<Document> stream = DatabaseFactory.getMainStream(tf);
             try {
-                BufferedWriter bw = new BufferedWriter(new java.io.FileWriter("output.csv", true));
-                List<State> fullState = input.take();
-                while (fullState != CLOSE) {
-                    for (State state : fullState) {
-                        for (BigDecimal value : state.getValues().values()) {
-                            bw.write(value.toPlainString());
-                            bw.write(", ");
-                        }
-                    }
-                    lines.incrementAndGet();
-                    bw.newLine();
+                List<State> state = input.take();
+                List<Document> toInsert = new ArrayList<>();
+                while (state != CLOSE) {
+                    Document doc = new Document();
 
-                    fullState = input.take();
+                    LocalDateTime timestamp = state.stream()
+                            .filter(s -> !s.getTimestamp().isEqual(LocalDateTime.MIN))
+                            .findFirst().orElseThrow(IllegalStateException::new)
+                            .getTimestamp();
+
+                    doc.append(Candle.TIMESTAMP_ATTR_NAME, timestamp);
+
+                    doc.append(VALUES_ATTR, state.stream()
+                            .collect(toMap(s -> s.getPair().getLabel(), s -> s.getValues().entrySet().stream().collect(toMap(entry -> entry.getKey().toString(), entry -> entry.getValue())), (o1, o2) -> o1, TreeMap::new)));
+
+                    toInsert.add(doc);
+                    records.incrementAndGet();
+                    if (toInsert.size() == QUEUE_SIZE) {
+                        stream.insertMany(toInsert);
+                        toInsert = new ArrayList<>();
+                        last = timestamp.toString();
+                    }
+
+                    state = input.take();
                 }
-                bw.close();
+                stream.insertMany(toInsert);
+                SERVICE.shutdown();
+                TIMED.shutdown();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-            } catch (IOException e) {
-                throw new UncheckedIOException("", e);
             }
-            SERVICE.shutdown();
-            TIMED.shutdown();
+        }
+
+        public long getRecords() {
+            return records.get();
+        }
+
+        public String getLast() {
+            return last;
         }
     }
 
-//    private class FileCSVWriter implements Runnable {
-//
-//        private final BlockingQueue<List<State>> input;
-//
-//        public FileCSVWriter(BlockingQueue<List<State>> input) {
-//            this.input = input;
-//        }
-//
-//        @Override
-//        public void run() {
-//            try {
-//                BufferedWriter bw = new BufferedWriter(new java.io.FileWriter("output.csv", true));
-//                Document current = input.take();
-//                Document next = input.take();
-//                while (next != END) {
-//                    List<Integer> keys = current.keySet().stream()
-//                            .filter(key -> !key.equals(Candle.TIMESTAMP_ATTR_NAME))
-//                            .filter(key -> !key.equals("_id"))
-//                            .map(Integer::valueOf)
-//                            .sorted()
-//                            .collect(toList());
-//
-//                    for (Integer key : keys) {
-//                        bw.write(current.get(key.toString(), Decimal128.class).bigDecimalValue().toPlainString());
-//                        bw.write(", ");
-//                    }
-//
-//                    bw.write("" + next.get("1", Decimal128.class).compareTo(current.get("1", Decimal128.class)));
-//                    bw.write(", ");
-//
-//                    bw.newLine();
-//                    current = next;
-//                    next = input.take();
-//                }
-//                bw.close();
-//            } catch (InterruptedException e) {
-//                Thread.currentThread().interrupt();
-//            } catch (IOException e) {
-//                throw new UncheckedIOException("", e);
-//            }
-//            SERVICE.shutdown();
-//            TIMED.shutdown();
-//        }
-//    }
-
-    private class WrappedBlockingQueue<T> extends ArrayBlockingQueue<T> {
+    private static class WrappedBlockingQueue<T> extends ArrayBlockingQueue<T> {
         public WrappedBlockingQueue(int capacity) {
             super(capacity);
         }
@@ -315,8 +293,8 @@ public class MongexFullStateWriter implements Runnable {
             try {
                 return super.take();
             } catch (InterruptedException e) {
-                // TODO implement UncheckedInterruptedException
-                throw new RuntimeException(e);
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException();
             }
         }
     }

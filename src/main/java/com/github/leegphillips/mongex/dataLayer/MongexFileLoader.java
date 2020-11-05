@@ -120,10 +120,10 @@ public class MongexFileLoader implements Runnable {
             LOG.info("Filtered: " + filters.stream().mapToLong(TickTimeFrameFilter::getFiltered).sum());
             LOG.info("Padded: " + padders.stream().mapToInt(TickPadder::getPadding).sum());
             LOG.info("Queues:"
-                    + " Trackers: " + trackers.stream().mapToInt(tracker -> QUEUE_SIZE - tracker.remainingCapacity()).sum()
-                    + " Padders: " + padders.stream().mapToInt(padder -> QUEUE_SIZE - padder.remainingCapacity()).sum()
-                    + " Filters: " + filters.stream().mapToInt(filter -> QUEUE_SIZE - filter.remainingCapacity()).sum()
-                    + " Readers: " + readers.stream().mapToInt(reader -> QUEUE_SIZE - reader.remainingCapacity()).sum());
+                    + " Filters: " + readers.stream().mapToInt(reader -> QUEUE_SIZE - reader.remainingCapacity()).sum()
+                    + " Padders: " + filters.stream().mapToInt(filter -> QUEUE_SIZE - filter.remainingCapacity()).sum()
+                    + " Trackers: " + padders.stream().mapToInt(padder -> QUEUE_SIZE - padder.remainingCapacity()).sum()
+                    + " Writers: " + trackers.stream().mapToInt(tracker -> QUEUE_SIZE - tracker.remainingCapacity()).sum());
         }
     }
 
@@ -255,7 +255,7 @@ public class MongexFileLoader implements Runnable {
     }
 
     @ToString
-    private class TickMATracker extends ArrayBlockingQueue<State> implements Runnable {
+    private static class TickMATracker extends ArrayBlockingQueue<State> implements Runnable {
 
         private final BlockingQueue<Tick> input;
         private final List<SimpleMovingAverage> sMAs = Arrays.stream(MA_SIZES).mapToObj(SimpleMovingAverage::new).collect(toList());
