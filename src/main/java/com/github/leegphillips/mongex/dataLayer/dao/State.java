@@ -4,13 +4,12 @@ import com.github.leegphillips.mongex.dataLayer.Candle;
 import com.github.leegphillips.mongex.dataLayer.CurrencyPair;
 import lombok.ToString;
 import org.bson.Document;
-import org.bson.types.Decimal128;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.Map;
-import java.util.TreeMap;
 
 import static java.util.stream.Collectors.toMap;
 
@@ -46,9 +45,11 @@ public class State {
         LocalDateTime timestamp = LocalDateTime.parse(doc.getString(Candle.TIMESTAMP_ATTR_NAME), FORMATTER);
         CurrencyPair pair = CurrencyPair.get(doc.getString(INSTRUMENT_ATTR_NAME));
 
-        Document smas = doc.get(SMA_ATTR_NAME, Document.class);
-        Map<Integer, BigDecimal> values = smas.keySet().stream()
-                .collect(toMap(key -> Integer.valueOf(key), key -> smas.get(key, Decimal128.class).bigDecimalValue(), (o1, o2) -> o1, TreeMap::new));
+//        Document smas = doc.get(SMA_ATTR_NAME, Document.class);
+//        Map<Integer, BigDecimal> values = smas.keySet().stream()
+//                .collect(toMap(key -> Integer.valueOf(key), key -> smas.get(key, Decimal128.class).bigDecimalValue(), (o1, o2) -> o1, TreeMap::new));
+
+        Map<Integer, BigDecimal> values = Collections.EMPTY_MAP;
 
         return new State(pair, timestamp, values);
     }
