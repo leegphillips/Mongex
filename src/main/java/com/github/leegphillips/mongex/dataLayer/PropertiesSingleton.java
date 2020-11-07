@@ -12,6 +12,8 @@ public class PropertiesSingleton {
 
     public static final String BATCH_SIZE = "dataloader.behaviour.batchsize";
 
+    public static final String CSV_LOCATION = "csvexporter.data.file";
+
     private static final Logger log = LoggerFactory.getLogger(PropertiesSingleton.class);
 
     private static Properties INSTANCE;

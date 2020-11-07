@@ -135,7 +135,6 @@ public class MongexFullStateWriter implements Runnable {
         private final BlockingQueue<Document> input;
 
         public Convertor(BlockingQueue<Document> input) {
-            super(QUEUE_SIZE);
             this.input = input;
         }
 

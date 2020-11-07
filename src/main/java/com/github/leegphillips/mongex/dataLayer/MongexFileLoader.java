@@ -1,7 +1,7 @@
 package com.github.leegphillips.mongex.dataLayer;
 
 import com.github.leegphillips.mongex.dataLayer.dao.State;
-import com.github.leegphillips.mongex.dataLayer.processors.TickMATracker;
+import com.github.leegphillips.mongex.dataLayer.processors.StateTracker;
 import com.github.leegphillips.mongex.dataLayer.processors.TickPadder;
 import com.github.leegphillips.mongex.dataLayer.processors.TickReader;
 import com.github.leegphillips.mongex.dataLayer.processors.TickTimeFrameFilter;
@@ -67,8 +67,8 @@ public class MongexFileLoader implements Runnable {
                 .collect(toList());
         padders.forEach(SERVICE::execute);
 
-        List<TickMATracker> trackers = padders.stream()
-                .map(TickMATracker::new)
+        List<StateTracker> trackers = padders.stream()
+                .map(StateTracker::new)
                 .collect(toList());
         trackers.forEach(SERVICE::execute);
 
@@ -83,12 +83,12 @@ public class MongexFileLoader implements Runnable {
     private class Monitor implements Runnable {
 
         private final List<MongoWriter> writers;
-        private final List<TickMATracker> trackers;
+        private final List<StateTracker> trackers;
         private final List<TickPadder> padders;
         private final List<TickTimeFrameFilter> filters;
         private final List<TickReader> readers;
 
-        private Monitor(List<MongoWriter> writers, List<TickMATracker> trackers, List<TickPadder> padders, List<TickTimeFrameFilter> filters, List<TickReader> readers) {
+        private Monitor(List<MongoWriter> writers, List<StateTracker> trackers, List<TickPadder> padders, List<TickTimeFrameFilter> filters, List<TickReader> readers) {
             this.writers = writers;
             this.trackers = trackers;
             this.padders = padders;
