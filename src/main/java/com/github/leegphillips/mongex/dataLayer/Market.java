@@ -12,11 +12,9 @@ import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 
 public class Market {
-    private static final Logger LOG = LoggerFactory.getLogger(Market.class);
-
     public static final String MARKET_COUNT_ATTR_NAME = "market count";
     public static final String ATTR_NAME = "market";
-
+    private static final Logger LOG = LoggerFactory.getLogger(Market.class);
     private final List<CurrencyPair> marketComponents;
     private final List<Candle> candles = new ArrayList<>();
 

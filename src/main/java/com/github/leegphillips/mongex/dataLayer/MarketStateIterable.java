@@ -17,6 +17,14 @@ public class MarketStateIterable extends ArrayBlockingQueue<Change> {
         new Thread(new Worker(), getClass().getSimpleName()).start();
     }
 
+    public static void main(String[] args) throws InterruptedException {
+        MarketStateIterable changes = new MarketStateIterable();
+        Change change = changes.take();
+        while (change != Change.POISON) {
+            change = changes.take();
+        }
+    }
+
     private class Worker implements Runnable {
 
         @Override
@@ -35,14 +43,6 @@ public class MarketStateIterable extends ArrayBlockingQueue<Change> {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-        }
-    }
-
-    public static void main(String[] args) throws InterruptedException {
-        MarketStateIterable changes = new MarketStateIterable();
-        Change change = changes.take();
-        while (change != Change.POISON) {
-            change = changes.take();
         }
     }
 }

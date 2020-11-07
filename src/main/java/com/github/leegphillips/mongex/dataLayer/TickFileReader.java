@@ -38,6 +38,15 @@ public class TickFileReader implements Closeable {
         }
     }
 
+    public static void main(String[] args) {
+        TickFileReader ticks = new TickFileReader(new File("C:\\Forex\\data\\HISTDATA_COM_ASCII_AUDCHF_T200811.zip"));
+        Tick tick = ticks.readTick();
+        while (tick != null) {
+            tick = ticks.readTick();
+        }
+        ticks.close();
+    }
+
     public Tick readTick() {
         try {
             String line = br.readLine();
@@ -61,14 +70,5 @@ public class TickFileReader implements Closeable {
         } catch (IOException e) {
             throw new UncheckedIOException(zip.getName(), e);
         }
-    }
-
-    public static void main(String[] args) {
-        TickFileReader ticks = new TickFileReader(new File("C:\\Forex\\data\\HISTDATA_COM_ASCII_AUDCHF_T200811.zip"));
-        Tick tick = ticks.readTick();
-        while (tick != null) {
-            tick = ticks.readTick();
-        }
-        ticks.close();
     }
 }

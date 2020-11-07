@@ -40,16 +40,16 @@ public class CSVExporter implements Runnable {
     private final TimeFrame tf;
 
 
-    public static void main(String[] args) {
-        CurrencyPair pair = CurrencyPair.get(args[0]);
-        TimeFrame tf = TimeFrame.get(args[1]);
-        new CSVExporter(pair, tf).run();
-    }
-
     public CSVExporter(CurrencyPair pair, TimeFrame tf) {
         this.pair = pair;
         this.tf = tf;
         this.output = new File(PropertiesSingleton.getInstance().getProperty(CSV_LOCATION) + pair.getLabel() + "-" + tf.getLabel() + ".csv");
+    }
+
+    public static void main(String[] args) {
+        CurrencyPair pair = CurrencyPair.get(args[0]);
+        TimeFrame tf = TimeFrame.get(args[1]);
+        new CSVExporter(pair, tf).run();
     }
 
     @Override
@@ -120,6 +120,7 @@ public class CSVExporter implements Runnable {
             LOG.info("Rate: " + rate + " lines/s");
             LOG.info("Files: " + readers.values().stream().mapToInt(TickReader::getFilesCompleted).sum());
             LOG.info("File size: " + writer.getFileSize() / 1024 + "kb");
+            LOG.info("Last: " + writer.getLast());
             LOG.info("Filtered: " + filters.values().stream().mapToLong(TickTimeFrameFilter::getFiltered).sum());
             LOG.info("Padded: " + padders.values().stream().mapToInt(TickPadder::getPadding).sum());
             LOG.info("Queues:"

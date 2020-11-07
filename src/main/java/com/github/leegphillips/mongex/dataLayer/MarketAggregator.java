@@ -12,10 +12,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public class MarketAggregator {
-    private static final Logger LOG = LoggerFactory.getLogger(MarketAggregator.class);
-
     public static final String COLLECTION_NAME = "MARKET";
-
+    private static final Logger LOG = LoggerFactory.getLogger(MarketAggregator.class);
     private final MongoDatabase db;
     private final TimeFrame timeFrame;
 

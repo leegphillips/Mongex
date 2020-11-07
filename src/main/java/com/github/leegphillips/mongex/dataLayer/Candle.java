@@ -23,8 +23,6 @@ import static java.util.Comparator.comparing;
 
 @ToString
 public class Candle {
-    private static final Logger LOG = LoggerFactory.getLogger(Candle.class);
-
     public static final String TIMESTAMP_ATTR_NAME = "timestamp";
     public static final String OPEN_ATTR_NAME = "open";
     public static final String HIGH_ATTR_NAME = "high";
@@ -35,7 +33,7 @@ public class Candle {
     public static final String ERROR_COUNT_ATTR_NAME = "error count";
     public static final String DUPLICATES_COUNT_ATTR_NAME = "duplicates count";
     public static final String INVERSION_COUNT_ATTR_NAME = "inversion count";
-
+    private static final Logger LOG = LoggerFactory.getLogger(Candle.class);
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private final TimeFrame timeFrame;

@@ -35,13 +35,13 @@ public class MongexFullStateWriter implements Runnable {
 
     private final TimeFrame tf;
 
+    public MongexFullStateWriter(TimeFrame tf) {
+        this.tf = tf;
+    }
+
     public static void main(String[] args) {
         TimeFrame tf = TimeFrame.get(args[0]);
         new MongexFullStateWriter(tf).run();
-    }
-
-    public MongexFullStateWriter(TimeFrame tf) {
-        this.tf = tf;
     }
 
     @Override
@@ -64,41 +64,6 @@ public class MongexFullStateWriter implements Runnable {
 //        SERVICE.execute(writer);
 
 //        TIMED.scheduleAtFixedRate(new Monitor(readers, convertors, aggregator, fullState, writer), 5, 5, TimeUnit.SECONDS);
-    }
-
-    private class Monitor implements Runnable {
-
-        private final List<MongoReader> readers;
-        private final List<Convertor> convertors;
-        private final StateAggregator aggregator;
-        private final FullStateTracker fullState;
-        private final MongoWriter writer;
-
-        public Monitor(Map<CurrencyPair, MongoReader> readers, Map<CurrencyPair, Convertor> convertors, StateAggregator aggregator, FullStateTracker fullState, MongoWriter writer) {
-            this.readers = new ArrayList<>(readers.values());
-            this.convertors = new ArrayList<>(convertors.values());
-            this.aggregator = aggregator;
-            this.fullState = fullState;
-            this.writer = writer;
-        }
-
-        @Override
-        public void run() {
-            long duration = (System.currentTimeMillis() - start) / 1000;
-            long records = writer.getRecords();
-            long rate = records/duration;
-            LOG.info("-----------------------------------------------------------------");
-            LOG.info("Duration: " + duration + "s");
-            LOG.info("Records: " + records);
-            LOG.info("Rate: " + rate + " record/s");
-            LOG.info("Remaining: " + readers.stream().mapToLong(MongoReader::getRemaining).sum());
-            LOG.info("Last: " + writer.getLast());
-            LOG.info("Queues:"
-                    + " Readers: " + readers.stream().mapToInt(tracker -> QUEUE_SIZE - tracker.remainingCapacity()).sum()
-                    + " Convertors: " + convertors.stream().mapToInt(tracker -> QUEUE_SIZE - tracker.remainingCapacity()).sum()
-                    + " Aggregator: " + (QUEUE_SIZE - aggregator.remainingCapacity())
-                    + " Full state: " + (QUEUE_SIZE - fullState.remainingCapacity()));
-        }
     }
 
     private static class MongoReader extends ArrayBlockingQueue<Document> implements Runnable {
@@ -150,6 +115,41 @@ public class MongexFullStateWriter implements Runnable {
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    private class Monitor implements Runnable {
+
+        private final List<MongoReader> readers;
+        private final List<Convertor> convertors;
+        private final StateAggregator aggregator;
+        private final FullStateTracker fullState;
+        private final MongoWriter writer;
+
+        public Monitor(Map<CurrencyPair, MongoReader> readers, Map<CurrencyPair, Convertor> convertors, StateAggregator aggregator, FullStateTracker fullState, MongoWriter writer) {
+            this.readers = new ArrayList<>(readers.values());
+            this.convertors = new ArrayList<>(convertors.values());
+            this.aggregator = aggregator;
+            this.fullState = fullState;
+            this.writer = writer;
+        }
+
+        @Override
+        public void run() {
+            long duration = (System.currentTimeMillis() - start) / 1000;
+            long records = writer.getRecords();
+            long rate = records / duration;
+            LOG.info("-----------------------------------------------------------------");
+            LOG.info("Duration: " + duration + "s");
+            LOG.info("Records: " + records);
+            LOG.info("Rate: " + rate + " record/s");
+            LOG.info("Remaining: " + readers.stream().mapToLong(MongoReader::getRemaining).sum());
+            LOG.info("Last: " + writer.getLast());
+            LOG.info("Queues:"
+                    + " Readers: " + readers.stream().mapToInt(tracker -> QUEUE_SIZE - tracker.remainingCapacity()).sum()
+                    + " Convertors: " + convertors.stream().mapToInt(tracker -> QUEUE_SIZE - tracker.remainingCapacity()).sum()
+                    + " Aggregator: " + (QUEUE_SIZE - aggregator.remainingCapacity())
+                    + " Full state: " + (QUEUE_SIZE - fullState.remainingCapacity()));
         }
     }
 

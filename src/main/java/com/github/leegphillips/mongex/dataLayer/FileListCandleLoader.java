@@ -34,21 +34,9 @@ public class FileListCandleLoader implements Runnable {
     private final List<File> allFilesForPair;
     private final AtomicInteger counter;
     private final TimeFrame timeFrame;
+    private final List<SimpleMovingAverage> sMAs = stream(new int[]{2, 8, 34, 144, 610, 2584}).mapToObj(SimpleMovingAverage::new).collect(toList());
     private LocalDateTime chunkEnd;
     private Tick pos;
-
-    private final List<SimpleMovingAverage> sMAs = stream(new int[]{2, 8, 34, 144, 610, 2584}).mapToObj(SimpleMovingAverage::new).collect(toList());
-
-    public static void main(String[] args) {
-        ZipExtractor extractor = new ZipExtractor();
-        Properties properties = PropertiesSingleton.getInstance();
-        MongoDatabase db = DatabaseFactory.create();
-        MongoCollection<Document> candles = db.getCollection(CandleLoader.COLLECTION_NAME);
-        File[] files = new File(properties.getProperty(PropertiesSingleton.SOURCE_DIR)).listFiles();
-        List<File> filesForPair = stream(files).filter(file -> file.getName().contains(args[0])).collect(toList());
-        AtomicInteger counter = new AtomicInteger(filesForPair.size());
-        new FileListCandleLoader(extractor, CandleDefinitions.FIVE_MINUTES, candles, filesForPair, counter).run();
-    }
 
     public FileListCandleLoader(ZipExtractor extractor, CandleSpecification candleSpecification,
                                 MongoCollection<Document> candlesCollection, List<File> allFilesForPair,
@@ -60,6 +48,17 @@ public class FileListCandleLoader implements Runnable {
         this.counter = counter;
         this.allFilesForPair.sort(File::compareTo);
         this.timeFrame = candleSpecification.getTickSize();
+    }
+
+    public static void main(String[] args) {
+        ZipExtractor extractor = new ZipExtractor();
+        Properties properties = PropertiesSingleton.getInstance();
+        MongoDatabase db = DatabaseFactory.create();
+        MongoCollection<Document> candles = db.getCollection(CandleLoader.COLLECTION_NAME);
+        File[] files = new File(properties.getProperty(PropertiesSingleton.SOURCE_DIR)).listFiles();
+        List<File> filesForPair = stream(files).filter(file -> file.getName().contains(args[0])).collect(toList());
+        AtomicInteger counter = new AtomicInteger(filesForPair.size());
+        new FileListCandleLoader(extractor, CandleDefinitions.FIVE_MINUTES, candles, filesForPair, counter).run();
     }
 
     @Override

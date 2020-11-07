@@ -18,6 +18,14 @@ public class ChangeIterable extends ArrayBlockingQueue<Change> {
         new Thread(new Worker(), getClass().getSimpleName()).start();
     }
 
+    public static void main(String[] args) throws InterruptedException {
+        ChangeIterable changes = new ChangeIterable();
+        Change change = changes.take();
+        while (change != Change.POISON) {
+            change = changes.take();
+        }
+    }
+
     private class Worker implements Runnable {
 
         @Override
@@ -46,14 +54,6 @@ public class ChangeIterable extends ArrayBlockingQueue<Change> {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-        }
-    }
-
-    public static void main(String[] args) throws InterruptedException {
-        ChangeIterable changes = new ChangeIterable();
-        Change change = changes.take();
-        while (change != Change.POISON) {
-            change = changes.take();
         }
     }
 }

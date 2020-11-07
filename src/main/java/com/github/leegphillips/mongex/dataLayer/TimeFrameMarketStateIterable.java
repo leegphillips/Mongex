@@ -24,6 +24,14 @@ public class TimeFrameMarketStateIterable extends ArrayBlockingQueue<Change> {
         new Thread(new Worker(), getClass().getSimpleName()).start();
     }
 
+    public static void main(String[] args) throws InterruptedException {
+        BlockingQueue<Change> input = new TimeFrameMarketStateIterable(TimeFrame.FIVE_MINUTES);
+        Change change = input.take();
+        while (change != Change.POISON) {
+            change = input.take();
+        }
+    }
+
     private class Worker implements Runnable {
 
         @Override
@@ -49,14 +57,6 @@ public class TimeFrameMarketStateIterable extends ArrayBlockingQueue<Change> {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-        }
-    }
-
-    public static void main(String[] args) throws InterruptedException {
-        BlockingQueue<Change> input = new TimeFrameMarketStateIterable(TimeFrame.FIVE_MINUTES);
-        Change change = input.take();
-        while (change != Change.POISON) {
-            change = input.take();
         }
     }
 }

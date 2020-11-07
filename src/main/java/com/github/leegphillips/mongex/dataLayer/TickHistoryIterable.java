@@ -23,6 +23,18 @@ public class TickHistoryIterable extends ArrayBlockingQueue<Tick> {
         new Thread(new Worker(), getClass().getSimpleName() + ":" + pair.getLabel()).start();
     }
 
+    public static void main(String[] args) throws InterruptedException {
+        TickHistoryIterable eurusd = new TickHistoryIterable(CurrencyPair.get("EURUSD"));
+        Tick tick = eurusd.take();
+        while (tick != Tick.POISON) {
+            tick = eurusd.take();
+        }
+    }
+
+    public CurrencyPair getPair() {
+        return pair;
+    }
+
     private class Worker implements Runnable {
 
         @Override
@@ -48,17 +60,5 @@ public class TickHistoryIterable extends ArrayBlockingQueue<Tick> {
                 Thread.currentThread().interrupt();
             }
         }
-    }
-
-    public static void main(String[] args) throws InterruptedException {
-        TickHistoryIterable eurusd = new TickHistoryIterable(CurrencyPair.get("EURUSD"));
-        Tick tick = eurusd.take();
-        while (tick != Tick.POISON) {
-            tick = eurusd.take();
-        }
-    }
-
-    public CurrencyPair getPair() {
-        return pair;
     }
 }

@@ -16,15 +16,13 @@ import static com.github.leegphillips.mongex.dataLayer.utils.Constants.MA_SIZES;
 import static java.util.stream.Collectors.toMap;
 
 public class State {
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-
     public static final String INSTRUMENT_ATTR_NAME = "instrument";
     public static final String SMA_ATTR_NAME = "sma";
     public static final State END = new State(null, null, null);
     public static final State UNSTARTED = new State(null, LocalDateTime.MIN, Arrays.stream(MA_SIZES)
             .boxed()
             .collect(toMap(entry -> entry, entry -> BigDecimal.ZERO, (o1, o2) -> o1, TreeMap::new)));
-
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private final CurrencyPair pair;
     private final LocalDateTime timestamp;
     private final Map<Integer, BigDecimal> values;
@@ -33,16 +31,6 @@ public class State {
         this.pair = pair;
         this.timestamp = timestamp;
         this.values = values;
-    }
-
-    public Document toDocument() {
-        Document doc = new Document();
-
-        doc.append(Candle.TIMESTAMP_ATTR_NAME, timestamp.format(FORMATTER));
-        doc.append(INSTRUMENT_ATTR_NAME, pair.getLabel());
-        doc.append(SMA_ATTR_NAME, values.entrySet().stream().collect(toMap(entry -> entry.getKey().toString(), Map.Entry::getValue)));
-
-        return doc;
     }
 
     public static State fromDocument(Document doc) {
@@ -56,6 +44,16 @@ public class State {
         Map<Integer, BigDecimal> values = Collections.EMPTY_MAP;
 
         return new State(pair, timestamp, values);
+    }
+
+    public Document toDocument() {
+        Document doc = new Document();
+
+        doc.append(Candle.TIMESTAMP_ATTR_NAME, timestamp.format(FORMATTER));
+        doc.append(INSTRUMENT_ATTR_NAME, pair.getLabel());
+        doc.append(SMA_ATTR_NAME, values.entrySet().stream().collect(toMap(entry -> entry.getKey().toString(), Map.Entry::getValue)));
+
+        return doc;
     }
 
     public CurrencyPair getPair() {

@@ -30,6 +30,47 @@ public class AggregateState extends ArrayBlockingQueue<AggregateState.FlatState>
         new Thread(new Worker(), getClass().getSimpleName()).start();
     }
 
+    public static void main(String[] args) throws InterruptedException {
+        BlockingQueue<FlatState> input = new AggregateState(new TimeFrameMarketStateIterable(TimeFrame.ONE_DAY));
+        FlatState state = input.take();
+        while (state != FlatState.POISON) {
+            state = input.take();
+        }
+    }
+
+    static class FlatState {
+        final static FlatState POISON = new FlatState(null, null);
+
+        private final LocalDateTime timestamp;
+        private final Map<CurrencyPair, Map<Integer, BigDecimal>> values;
+
+        FlatState(LocalDateTime timestamp, Map<CurrencyPair, Map<Integer, BigDecimal>> values) {
+            this.timestamp = timestamp;
+            this.values = values;
+        }
+
+        @Override
+        public String toString() {
+            return timestamp.plusNanos(1).toString();
+        }
+
+        public Document toDocument() {
+            Document doc = new Document();
+
+            doc.put(Candle.TIMESTAMP_ATTR_NAME, timestamp.toString());
+
+            for (Map.Entry<CurrencyPair, Map<Integer, BigDecimal>> entry : values.entrySet()) {
+                Map<String, BigDecimal> copy = entry.getValue().entrySet()
+                        .stream()
+                        .collect(toMap(a -> a.getKey().toString(), Map.Entry::getValue));
+
+                doc.put(entry.getKey().getLabel(), copy);
+            }
+
+            return doc;
+        }
+    }
+
     private class Worker implements Runnable {
 
         @Override
@@ -58,47 +99,6 @@ public class AggregateState extends ArrayBlockingQueue<AggregateState.FlatState>
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-        }
-    }
-
-    static class FlatState {
-        final static FlatState POISON = new FlatState(null, null);
-
-        private final LocalDateTime timestamp;
-        private final Map<CurrencyPair, Map<Integer, BigDecimal>> values;
-
-        FlatState(LocalDateTime timestamp, Map<CurrencyPair, Map<Integer, BigDecimal>> values) {
-            this.timestamp = timestamp;
-            this.values = values;
-        }
-
-        @Override
-        public String toString() {
-            return timestamp.plusNanos(1).toString();
-        }
-
-        public Document toDocument() {
-            Document doc = new Document();
-
-            doc.put(Candle.TIMESTAMP_ATTR_NAME, timestamp.toString());
-
-            for (Map.Entry<CurrencyPair, Map<Integer, BigDecimal>> entry : values.entrySet()) {
-                Map<String, BigDecimal> copy = entry.getValue().entrySet()
-                                                    .stream()
-                                                    .collect(toMap(a -> a.getKey().toString(), Map.Entry::getValue));
-
-                doc.put(entry.getKey().getLabel(), copy);
-            }
-
-            return doc;
-        }
-    }
-
-    public static void main(String[] args) throws InterruptedException {
-        BlockingQueue<FlatState> input = new AggregateState(new TimeFrameMarketStateIterable(TimeFrame.ONE_DAY));
-        FlatState state = input.take();
-        while (state != FlatState.POISON) {
-            state = input.take();
         }
     }
 }

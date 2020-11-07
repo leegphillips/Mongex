@@ -16,14 +16,11 @@ import static java.util.stream.Stream.of;
 
 @ToString
 public class Change implements Serializable {
-    private static final Logger LOG = LoggerFactory.getLogger(Change.class);
-
     public static final Change POISON = new Change(null, null);
-
+    private static final Logger LOG = LoggerFactory.getLogger(Change.class);
     private static final Set<CurrencyPair> ALL = Utils.getAllCurrencies().collect(Collectors.toSet());
-
-    private LocalDateTime timestamp;
     private final Map<CurrencyPair, Delta> deltas;
+    private LocalDateTime timestamp;
 
     public Change(LocalDateTime timestamp, Map<CurrencyPair, Delta> deltas) {
         this.timestamp = timestamp;

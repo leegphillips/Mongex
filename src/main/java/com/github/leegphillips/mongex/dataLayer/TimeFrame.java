@@ -5,7 +5,6 @@ import lombok.NonNull;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.function.UnaryOperator;
 
 @SuppressWarnings("unused")
@@ -36,18 +35,18 @@ public enum TimeFrame {
         this.next = next;
     }
 
+    public static TimeFrame get(@NonNull String label) {
+        return Arrays.stream(TimeFrame.class.getEnumConstants())
+                .filter(tf -> tf.label.equals(label))
+                .findFirst().orElseThrow(() -> new IllegalArgumentException("Searching for an non-existent value: " + label));
+    }
+
     public String getLabel() {
         return label;
     }
 
     public LocalDateTime next(LocalDateTime timestamp) {
         return next.apply(timestamp);
-    }
-
-    public static TimeFrame get(@NonNull String label) {
-        return Arrays.stream(TimeFrame.class.getEnumConstants())
-                .filter(tf -> tf.label.equals(label))
-                .findFirst().orElseThrow(() -> new IllegalArgumentException("Searching for an non-existent value: " + label));
     }
 
     @Override

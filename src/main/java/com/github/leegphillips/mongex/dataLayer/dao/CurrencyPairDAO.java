@@ -3,7 +3,6 @@ package com.github.leegphillips.mongex.dataLayer.dao;
 import com.github.leegphillips.mongex.dataLayer.CandleLoader;
 import com.github.leegphillips.mongex.dataLayer.CurrencyPair;
 import com.github.leegphillips.mongex.dataLayer.DatabaseFactory;
-import com.github.leegphillips.mongex.dataLayer.PropertiesSingleton;
 import com.mongodb.client.MongoCollection;
 import org.bson.Document;
 

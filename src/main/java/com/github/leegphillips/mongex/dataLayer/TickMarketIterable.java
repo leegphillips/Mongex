@@ -22,6 +22,14 @@ public class TickMarketIterable extends ArrayBlockingQueue<Tick> {
         new Thread(new Worker(), getClass().getSimpleName()).start();
     }
 
+    public static void main(String[] args) throws InterruptedException {
+        TickMarketIterable ticks = new TickMarketIterable();
+        Tick tick = ticks.take();
+        while (tick != Tick.POISON) {
+            tick = ticks.take();
+        }
+    }
+
     private class Worker implements Runnable {
         @Override
         public void run() {
@@ -59,14 +67,6 @@ public class TickMarketIterable extends ArrayBlockingQueue<Tick> {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-        }
-    }
-
-    public static void main(String[] args) throws InterruptedException {
-        TickMarketIterable ticks = new TickMarketIterable();
-        Tick tick = ticks.take();
-        while (tick != Tick.POISON) {
-            tick = ticks.take();
         }
     }
 }
