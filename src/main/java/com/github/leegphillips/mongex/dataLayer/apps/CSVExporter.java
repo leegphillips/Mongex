@@ -34,7 +34,7 @@ public class CSVExporter implements Runnable {
 
     private final long start = System.currentTimeMillis();
 
-    private final File output = new File(PropertiesSingleton.getInstance().getProperty(CSV_LOCATION));
+    private final File output;
 
     private final CurrencyPair pair;
     private final TimeFrame tf;
@@ -49,6 +49,7 @@ public class CSVExporter implements Runnable {
     public CSVExporter(CurrencyPair pair, TimeFrame tf) {
         this.pair = pair;
         this.tf = tf;
+        this.output = new File(PropertiesSingleton.getInstance().getProperty(CSV_LOCATION) + pair.getLabel() + "-" + tf.getLabel() + ".csv");
     }
 
     @Override

@@ -9,6 +9,8 @@ import com.github.leegphillips.mongex.dataLayer.utils.WrappedBlockingQueue;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import static com.github.leegphillips.mongex.dataLayer.dao.State.END;
 import static com.github.leegphillips.mongex.dataLayer.utils.Constants.MA_SIZES;
@@ -29,7 +31,8 @@ public class StateTracker extends WrappedBlockingQueue<State> implements Runnabl
         while (tick != Tick.POISON) {
             BigDecimal mid = tick.getMid();
             sMAs.parallelStream().forEach(ma -> ma.add(mid));
-            put(new State(tick.getPair(), tick.getTimestamp(), sMAs.parallelStream().collect(toMap(MovingAverage::getSize, SimpleMovingAverage::getValue))));
+            Map<Integer, BigDecimal> values = sMAs.parallelStream().collect(toMap(MovingAverage::getSize, SimpleMovingAverage::getValue, (o1, o2) -> o1, TreeMap::new));
+            put(new State(tick.getPair(), tick.getTimestamp(), values));
             tick = input.take();
         }
         put(END);
