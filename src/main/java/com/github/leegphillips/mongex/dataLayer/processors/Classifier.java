@@ -4,6 +4,8 @@ import com.github.leegphillips.mongex.dataLayer.CurrencyPair;
 import com.github.leegphillips.mongex.dataLayer.dao.Classification;
 import com.github.leegphillips.mongex.dataLayer.dao.State;
 import com.github.leegphillips.mongex.dataLayer.utils.WrappedBlockingQueue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -12,6 +14,7 @@ import java.util.Map;
 import static com.github.leegphillips.mongex.dataLayer.utils.Constants.CLOSE;
 
 public class Classifier extends WrappedBlockingQueue<Classification> implements Runnable {
+    private static final Logger LOG = LoggerFactory.getLogger(Classifier.class);
 
     private final CurrencyPair pair;
     private final WrappedBlockingQueue<Map<CurrencyPair, State>> input;
@@ -34,7 +37,11 @@ public class Classifier extends WrappedBlockingQueue<Classification> implements 
                 int diff = currentValue.compareTo(nextValue);
                 if (diff != 0) {
                     put(new Classification(diff < 0, new ArrayList<>(current.values())));
+                } else {
+                    LOG.info("2");
                 }
+            } else {
+                LOG.info("1");
             }
             current = next;
             next = input.take();
