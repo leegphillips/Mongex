@@ -5,10 +5,10 @@
         </encoder>
     </appender>
 
-    <appender name="MONGODB" class="com.github.leegphillips.mongex.logging.MongoDBAppender"/>
+    <!--appender name="MONGODB" class="com.github.leegphillips.mongex.logging.MongoDBAppender"/-->
 
     <root level="OFF">
         <appender-ref ref="STDOUT"/>
-        <appender-ref ref="MONGODB"/>
+        <!--appender-ref ref="MONGODB"/-->
     </root>
 </configuration>
