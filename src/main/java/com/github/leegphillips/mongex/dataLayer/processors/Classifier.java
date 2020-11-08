@@ -37,11 +37,8 @@ public class Classifier extends WrappedBlockingQueue<Classification> implements 
                 int diff = currentValue.compareTo(nextValue);
                 if (diff != 0) {
                     put(new Classification(diff < 0, new ArrayList<>(current.values())));
-                } else {
-                    LOG.info("2");
                 }
-            } else {
-                LOG.info("1");
+                LOG.info(currentValue.toPlainString() + " " + nextValue.toPlainString());
             }
             current = next;
             next = input.take();
