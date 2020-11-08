@@ -31,8 +31,10 @@ public class Classifier extends WrappedBlockingQueue<Classification> implements 
 
                 BigDecimal nextValue = next.get(pair).getValues().get(1);
 
-                // TODO only publish if there is a change
-                put(new Classification(currentValue.compareTo(nextValue) < 0, new ArrayList<>(current.values())));
+                int diff = currentValue.compareTo(nextValue);
+                if (diff != 0) {
+                    put(new Classification(diff < 0, new ArrayList<>(current.values())));
+                }
             }
             current = next;
             next = input.take();
