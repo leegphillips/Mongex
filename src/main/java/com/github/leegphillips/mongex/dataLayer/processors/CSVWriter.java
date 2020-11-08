@@ -7,6 +7,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.github.leegphillips.mongex.dataLayer.dao.Classification.CLOSE;
@@ -14,21 +16,29 @@ import static com.github.leegphillips.mongex.dataLayer.dao.Classification.CLOSE;
 public class CSVWriter implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(CSVWriter.class);
 
-    private final File output;
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+    private static final LocalDateTime CUT_OFF = LocalDateTime.parse("2019-11-09 00:00", FORMATTER);
+
+    private final File train;
+    private final File eval;
     private final WrappedBlockingQueue<Classification> input;
     private final AtomicLong counter = new AtomicLong(0);
-    private final BufferedWriter bw;
+    private final BufferedWriter bwTrain;
+    private final BufferedWriter bwEval;
     private String last;
 
-    public CSVWriter(File output, WrappedBlockingQueue<Classification> input) {
-        this.output = output;
+    public CSVWriter(File train, File eval, WrappedBlockingQueue<Classification> input) {
+        this.train = train;
+        this.eval = eval;
         this.input = input;
         try {
-            bw = new BufferedWriter(new FileWriter(output, true));
+            bwTrain = new BufferedWriter(new FileWriter(train, true));
+            bwEval = new BufferedWriter(new FileWriter(eval, true));
         } catch (IOException e) {
-            LOG.error(output.getName(), e);
+            LOG.error(train.getName(), e);
             System.exit(-5);
-            throw new UncheckedIOException(output.getName(), e);
+            throw new UncheckedIOException(train.getName(), e);
         }
     }
 
@@ -37,17 +47,23 @@ public class CSVWriter implements Runnable {
         try {
             Classification classification = input.take();
             while (classification != CLOSE) {
-                bw.write(classification.toCSV());
-                bw.newLine();
                 last = classification.getTimestamp().toString();
+                if (classification.getTimestamp().isBefore(CUT_OFF)) {
+                    bwTrain.write(classification.toCSV());
+                    bwTrain.newLine();
+                } else {
+                    bwEval.write(classification.toCSV());
+                    bwEval.newLine();
+                }
                 counter.incrementAndGet();
                 classification = input.take();
             }
-            bw.close();
+            bwTrain.close();
+            bwEval.close();
         } catch (IOException e) {
-            LOG.error(output.getName(), e);
+            LOG.error(train.getName() + " " + eval.getName(), e);
             System.exit(-4);
-            throw new UncheckedIOException(output.getName(), e);
+            throw new UncheckedIOException(train.getName(), e);
         }
     }
 
@@ -61,12 +77,13 @@ public class CSVWriter implements Runnable {
 
     public long getFileSize() {
         try {
-            bw.flush();
-            return Files.size(output.toPath());
+            bwTrain.flush();
+            bwEval.flush();
+            return Files.size(train.toPath()) + Files.size(eval.toPath());
         } catch (IOException e) {
-            LOG.error(output.getName(), e);
+            LOG.error(train.getName() + " " + eval.getName(), e);
             System.exit(-3);
-            throw new UncheckedIOException(output.getName(), e);
+            throw new UncheckedIOException(train.getName() + " " + eval.getName(), e);
         }
     }
 }

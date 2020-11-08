@@ -34,7 +34,8 @@ public class CSVExporter implements Runnable {
 
     private final long start = System.currentTimeMillis();
 
-    private final File output;
+    private final File train;
+    private final File eval;
 
     private final CurrencyPair pair;
     private final TimeFrame tf;
@@ -43,7 +44,8 @@ public class CSVExporter implements Runnable {
     public CSVExporter(CurrencyPair pair, TimeFrame tf) {
         this.pair = pair;
         this.tf = tf;
-        this.output = new File(PropertiesSingleton.getInstance().getProperty(CSV_LOCATION) + pair.getLabel() + "-" + tf.getLabel() + ".csv");
+        this.train = new File(PropertiesSingleton.getInstance().getProperty(CSV_LOCATION) + pair.getLabel() + "-" + tf.getLabel() + "-train.csv");
+        this.eval = new File(PropertiesSingleton.getInstance().getProperty(CSV_LOCATION) + pair.getLabel() + "-" + tf.getLabel() + "-eval.csv");
     }
 
     public static void main(String[] args) {
@@ -54,7 +56,8 @@ public class CSVExporter implements Runnable {
 
     @Override
     public void run() {
-        output.delete();
+        train.delete();
+        eval.delete();
 
         Map<CurrencyPair, TickReader> readers = Arrays.stream(PAIRS)
                 .collect(toMap(Function.identity(), TickReader::new));
@@ -81,7 +84,7 @@ public class CSVExporter implements Runnable {
         Classifier classifier = new Classifier(pair, fullStateTracker);
         SERVICE.execute(classifier);
 
-        CSVWriter writer = new CSVWriter(output, classifier);
+        CSVWriter writer = new CSVWriter(train, eval, classifier);
         SERVICE.execute(writer);
 
         TIMED.scheduleAtFixedRate(new Monitor(readers, filters, padders, trackers, aggregator, fullStateTracker, classifier, writer), 5, 5, TimeUnit.SECONDS);
