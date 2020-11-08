@@ -3,7 +3,6 @@ package com.github.leegphillips.mongex.dataLayer.dao;
 import com.github.leegphillips.mongex.dataLayer.CandleLoader;
 import com.github.leegphillips.mongex.dataLayer.CurrencyPair;
 import com.github.leegphillips.mongex.dataLayer.DatabaseFactory;
-import com.github.leegphillips.mongex.dataLayer.PropertiesSingleton;
 import com.mongodb.client.MongoCollection;
 import org.bson.Document;
 
@@ -14,7 +13,7 @@ public class CurrencyPairDAO {
     private final MongoCollection<Document> candles;
 
     public CurrencyPairDAO() {
-        this(DatabaseFactory.create(PropertiesSingleton.getInstance()).getCollection(CandleLoader.COLLECTION_NAME));
+        this(DatabaseFactory.create().getCollection(CandleLoader.COLLECTION_NAME));
     }
 
     CurrencyPairDAO(MongoCollection<Document> candles) {
@@ -24,7 +23,7 @@ public class CurrencyPairDAO {
     public List<CurrencyPair> getAll() {
         List<CurrencyPair> pairs = new ArrayList<>();
         candles.distinct(CurrencyPair.ATTR_NAME, String.class)
-                .map(CurrencyPair::new)
+                .map(CurrencyPair::get)
                 .iterator()
                 .forEachRemaining(pairs::add);
         return pairs;

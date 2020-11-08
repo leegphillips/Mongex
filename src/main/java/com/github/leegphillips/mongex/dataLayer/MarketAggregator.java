@@ -12,10 +12,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public class MarketAggregator {
-    private static final Logger LOG = LoggerFactory.getLogger(MarketAggregator.class);
-
     public static final String COLLECTION_NAME = "MARKET";
-
+    private static final Logger LOG = LoggerFactory.getLogger(MarketAggregator.class);
     private final MongoDatabase db;
     private final TimeFrame timeFrame;
 
@@ -26,7 +24,7 @@ public class MarketAggregator {
 
     public static void main(String[] args) {
         long start = System.currentTimeMillis();
-        new MarketAggregator(DatabaseFactory.create(PropertiesSingleton.getInstance()), TimeFrame.FIVE_MINUTES).execute();
+        new MarketAggregator(DatabaseFactory.create(), TimeFrame.FIVE_MINUTES).execute();
         LOG.info("Completed in " + (System.currentTimeMillis() - start) / 1000 + "s");
     }
 

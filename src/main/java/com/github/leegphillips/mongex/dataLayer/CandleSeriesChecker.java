@@ -8,7 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class CandleSeriesChecker implements Runnable {
@@ -18,20 +17,19 @@ public class CandleSeriesChecker implements Runnable {
     private final TimeFrame timeframe;
     private final AtomicInteger counter;
 
-    public static void main(String[] args) {
-        long start = System.currentTimeMillis();
-        Properties properties = PropertiesSingleton.getInstance();
-        MongoDatabase db = DatabaseFactory.create(properties);
-        MongoCollection<Document> candles = db.getCollection(CandleLoader.COLLECTION_NAME);
-        FindIterable<Document> pairSeries = candles.find(new Document(CurrencyPair.ATTR_NAME, new CurrencyPair(args[0]).getLabel()));
-        new CandleSeriesChecker(pairSeries, TimeFrame.get(args[1]), new AtomicInteger()).run();
-        LOG.info("Stream scanned in " + (System.currentTimeMillis() - start) + "ms");
-    }
-
     public CandleSeriesChecker(FindIterable<Document> pairSeries, TimeFrame timeframe, AtomicInteger counter) {
         this.pairSeries = pairSeries;
         this.timeframe = timeframe;
         this.counter = counter;
+    }
+
+    public static void main(String[] args) {
+        long start = System.currentTimeMillis();
+        MongoDatabase db = DatabaseFactory.create();
+        MongoCollection<Document> candles = db.getCollection(CandleLoader.COLLECTION_NAME);
+        FindIterable<Document> pairSeries = candles.find(new Document(CurrencyPair.ATTR_NAME, CurrencyPair.get(args[0]).getLabel()));
+        new CandleSeriesChecker(pairSeries, TimeFrame.get(args[1]), new AtomicInteger()).run();
+        LOG.info("Stream scanned in " + (System.currentTimeMillis() - start) + "ms");
     }
 
     @Override

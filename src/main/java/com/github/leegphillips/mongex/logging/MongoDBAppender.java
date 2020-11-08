@@ -3,7 +3,6 @@ package com.github.leegphillips.mongex.logging;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import com.github.leegphillips.mongex.dataLayer.DatabaseFactory;
-import com.github.leegphillips.mongex.dataLayer.PropertiesSingleton;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
@@ -17,7 +16,7 @@ public class MongoDBAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
     private final MongoCollection<Document> logs;
 
     public MongoDBAppender() {
-        MongoDatabase db = DatabaseFactory.create(PropertiesSingleton.getInstance());
+        MongoDatabase db = DatabaseFactory.create();
         logs = db.getCollection("logs");
         logs.createIndex(new Document("timestamp", 1));
     }

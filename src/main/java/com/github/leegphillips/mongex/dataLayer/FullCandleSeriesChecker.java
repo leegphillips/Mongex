@@ -31,7 +31,7 @@ public class FullCandleSeriesChecker {
     public static void main(String[] args) {
         long start = System.currentTimeMillis();
         Properties properties = PropertiesSingleton.getInstance();
-        MongoDatabase db = DatabaseFactory.create(properties);
+        MongoDatabase db = DatabaseFactory.create();
         new FullCandleSeriesChecker(properties, db).execute();
         LOG.info("All streams scanned in " + (System.currentTimeMillis() - start) + "ms");
     }

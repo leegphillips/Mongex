@@ -23,8 +23,6 @@ import static java.util.Comparator.comparing;
 
 @ToString
 public class Candle {
-    private static final Logger LOG = LoggerFactory.getLogger(Candle.class);
-
     public static final String TIMESTAMP_ATTR_NAME = "timestamp";
     public static final String OPEN_ATTR_NAME = "open";
     public static final String HIGH_ATTR_NAME = "high";
@@ -35,7 +33,7 @@ public class Candle {
     public static final String ERROR_COUNT_ATTR_NAME = "error count";
     public static final String DUPLICATES_COUNT_ATTR_NAME = "duplicates count";
     public static final String INVERSION_COUNT_ATTR_NAME = "inversion count";
-
+    private static final Logger LOG = LoggerFactory.getLogger(Candle.class);
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private final TimeFrame timeFrame;
@@ -103,7 +101,7 @@ public class Candle {
 
     public static Candle create(@NonNull Document doc) {
         TimeFrame timeframe = TimeFrame.get(doc.getString(TimeFrame.ATTR_NAME));
-        CurrencyPair pair = new CurrencyPair(doc.getString(CurrencyPair.ATTR_NAME));
+        CurrencyPair pair = CurrencyPair.get(doc.getString(CurrencyPair.ATTR_NAME));
         LocalDateTime timestamp = LocalDateTime.parse(doc.getString(TIMESTAMP_ATTR_NAME), FORMATTER);
         BigDecimal open = doc.get(OPEN_ATTR_NAME, Decimal128.class).bigDecimalValue();
         BigDecimal high = doc.get(HIGH_ATTR_NAME, Decimal128.class).bigDecimalValue();
@@ -138,7 +136,7 @@ public class Candle {
 
     private static Candle tickMapper(TimeFrame duration, CurrencyPair pair, Tick tick) {
         return new Candle(duration, pair, tick.getTimestamp(), tick.getMid(), tick.getMid(), tick.getMid(),
-                tick.getMid(), tick.getMid(), tick.isInterpolated() ? 0 : 1, 0, tick.isError() ? 1 : 0,
+                tick.getMid(), tick.getMid(), 0, 0, tick.isError() ? 1 : 0,
                 tick.isInverted() ? 1 : 0, EMPTY_MAP);
     }
 

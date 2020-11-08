@@ -33,7 +33,7 @@ public class CandleLoader {
 
     public static void main(String[] args) {
         Properties properties = PropertiesSingleton.getInstance();
-        MongoDatabase db = DatabaseFactory.create(properties);
+        MongoDatabase db = DatabaseFactory.create();
         new CandleLoader(properties, db, new ZipExtractor(), CandleDefinitions.FIVE_MINUTES).execute();
     }
 
@@ -50,7 +50,7 @@ public class CandleLoader {
         AtomicInteger counter = new AtomicInteger(files.length);
 
         stream(files)
-                .map(file -> new CurrencyPair(file))
+                .map(CurrencyPair::get)
                 .distinct()
                 .parallel()
                 .map(pair -> stream(files).filter(file -> file.getName().contains(pair.getLabel())).collect(toList()))
