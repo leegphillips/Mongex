@@ -41,7 +41,7 @@ public class Classifier extends WrappedBlockingQueue<Classification> implements 
                 } else {
                     LOG.info("Not different " + i + " " + current.get(pair).getTimestamp());
                 }
-                LOG.info(currentValue.toPlainString() + " " + nextValue.toPlainString());
+                LOG.info(current.get(pair).getTimestamp() + " " + currentValue.toPlainString() + " " + nextValue.toPlainString());
             }
             current = next;
             next = input.take();
