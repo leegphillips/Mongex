@@ -28,6 +28,7 @@ public class Classifier extends WrappedBlockingQueue<Classification> implements 
     public void run() {
         Map<CurrencyPair, State> current = input.take();
         Map<CurrencyPair, State> next = input.take();
+        int i = 0;
         while (next != CLOSE) {
             BigDecimal currentValue = current.get(pair).getValues().get(1);
             if (!currentValue.equals(BigDecimal.ZERO)) {
@@ -37,11 +38,14 @@ public class Classifier extends WrappedBlockingQueue<Classification> implements 
                 int diff = currentValue.compareTo(nextValue);
                 if (diff != 0) {
                     put(new Classification(diff < 0, new ArrayList<>(current.values())));
+                } else {
+                    LOG.info("Not different" + i);
                 }
                 LOG.info(currentValue.toPlainString() + " " + nextValue.toPlainString());
             }
             current = next;
             next = input.take();
+            i++;
         }
         put(Classification.CLOSE);
     }
