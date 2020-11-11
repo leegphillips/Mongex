@@ -117,11 +117,12 @@ public class CSVExporter implements Runnable {
             long duration = (System.currentTimeMillis() - start) / 1000;
             long lines = writer.getLines();
             long rate = lines / duration;
+            int filesCompleted = readers.values().stream().mapToInt(TickReader::getFilesCompleted).sum();
             LOG.info("-----------------------------------------------------------------");
             LOG.info("Duration: " + duration + "s");
             LOG.info("Lines: " + lines);
             LOG.info("Rate: " + rate + " lines/s");
-            LOG.info("Files: " + readers.values().stream().mapToInt(TickReader::getFilesCompleted).sum());
+            LOG.info("Files: " + filesCompleted);
             LOG.info("File size: " + writer.getFileSize() / 1024 + "kb");
             LOG.info("Last: " + writer.getLast());
             LOG.info("Filtered: " + filters.values().stream().mapToLong(TickTimeFrameFilter::getFiltered).sum());
@@ -134,6 +135,11 @@ public class CSVExporter implements Runnable {
                     + " Aggregator: " + (QUEUE_SIZE - aggregator.remainingCapacity())
                     + " Full state: " + (QUEUE_SIZE - fullStateTracker.remainingCapacity())
                     + " Classifier: " + (QUEUE_SIZE - classifier.remainingCapacity()));
+
+            if (filesCompleted == FILES.length) {
+                SERVICE.shutdown();
+                TIMED.shutdown();
+            }
         }
     }
 }
