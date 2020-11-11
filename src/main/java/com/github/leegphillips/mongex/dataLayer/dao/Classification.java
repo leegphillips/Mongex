@@ -27,7 +27,7 @@ public class Classification {
 
         result.append(timestamp);
         result.append(", ");
-        result.append(up);
+        result.append(up ? "1" : "0");
         result.append(", ");
         for (State state : states) {
             for (BigDecimal value : state.getValues().values()) {
