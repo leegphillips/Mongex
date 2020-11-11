@@ -1,9 +1,5 @@
-package com.github.leegphillips.mongex.dataLayer;
+package com.github.leegphillips.mongex.dataLayer.dao;
 
-import com.github.leegphillips.mongex.dataLayer.dao.Candle;
-import com.github.leegphillips.mongex.dataLayer.dao.CurrencyPair;
-import com.github.leegphillips.mongex.dataLayer.dao.Tick;
-import com.github.leegphillips.mongex.dataLayer.dao.TimeFrame;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;

@@ -1,6 +1,5 @@
-package com.github.leegphillips.mongex.dataLayer;
+package com.github.leegphillips.mongex.dataLayer.dao;
 
-import com.github.leegphillips.mongex.dataLayer.dao.CurrencyPair;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
