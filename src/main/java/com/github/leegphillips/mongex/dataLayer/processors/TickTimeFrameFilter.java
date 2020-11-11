@@ -1,7 +1,7 @@
 package com.github.leegphillips.mongex.dataLayer.processors;
 
-import com.github.leegphillips.mongex.dataLayer.Tick;
-import com.github.leegphillips.mongex.dataLayer.TimeFrame;
+import com.github.leegphillips.mongex.dataLayer.dao.Tick;
+import com.github.leegphillips.mongex.dataLayer.dao.TimeFrame;
 import com.github.leegphillips.mongex.dataLayer.utils.WrappedBlockingQueue;
 
 import java.time.LocalDateTime;

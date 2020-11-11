@@ -1,10 +1,10 @@
 package com.github.leegphillips.mongex.dataLayer.apps;
 
-import com.github.leegphillips.mongex.dataLayer.CurrencyPair;
-import com.github.leegphillips.mongex.dataLayer.PropertiesSingleton;
-import com.github.leegphillips.mongex.dataLayer.TimeFrame;
-import com.github.leegphillips.mongex.dataLayer.Utils;
+import com.github.leegphillips.mongex.dataLayer.dao.CurrencyPair;
+import com.github.leegphillips.mongex.dataLayer.dao.TimeFrame;
 import com.github.leegphillips.mongex.dataLayer.processors.*;
+import com.github.leegphillips.mongex.dataLayer.utils.PropertiesSingleton;
+import com.github.leegphillips.mongex.dataLayer.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,8 +17,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import static com.github.leegphillips.mongex.dataLayer.PropertiesSingleton.CSV_LOCATION;
 import static com.github.leegphillips.mongex.dataLayer.utils.Constants.QUEUE_SIZE;
+import static com.github.leegphillips.mongex.dataLayer.utils.PropertiesSingleton.CSV_LOCATION;
 import static java.util.stream.Collectors.toMap;
 
 public class CSVExporter implements Runnable {

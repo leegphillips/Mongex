@@ -1,4 +1,4 @@
-package com.github.leegphillips.mongex.dataLayer;
+package com.github.leegphillips.mongex.dataLayer.dao;
 
 import com.github.leegphillips.mongex.dataLayer.ma.SimpleMovingAverage;
 import lombok.NonNull;

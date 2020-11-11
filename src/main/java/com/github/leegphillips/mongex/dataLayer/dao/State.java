@@ -1,7 +1,5 @@
 package com.github.leegphillips.mongex.dataLayer.dao;
 
-import com.github.leegphillips.mongex.dataLayer.Candle;
-import com.github.leegphillips.mongex.dataLayer.CurrencyPair;
 import org.bson.Document;
 
 import java.math.BigDecimal;

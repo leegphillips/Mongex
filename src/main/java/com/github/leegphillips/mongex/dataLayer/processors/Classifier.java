@@ -1,7 +1,7 @@
 package com.github.leegphillips.mongex.dataLayer.processors;
 
-import com.github.leegphillips.mongex.dataLayer.CurrencyPair;
 import com.github.leegphillips.mongex.dataLayer.dao.Classification;
+import com.github.leegphillips.mongex.dataLayer.dao.CurrencyPair;
 import com.github.leegphillips.mongex.dataLayer.dao.State;
 import com.github.leegphillips.mongex.dataLayer.utils.WrappedBlockingQueue;
 import org.slf4j.Logger;

@@ -1,5 +1,8 @@
-package com.github.leegphillips.mongex.dataLayer;
+package com.github.leegphillips.mongex.dataLayer.utils;
 
+import com.github.leegphillips.mongex.dataLayer.dao.Candle;
+import com.github.leegphillips.mongex.dataLayer.dao.CurrencyPair;
+import com.github.leegphillips.mongex.dataLayer.dao.TimeFrame;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;

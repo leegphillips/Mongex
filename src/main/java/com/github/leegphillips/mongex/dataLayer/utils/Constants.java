@@ -1,6 +1,6 @@
 package com.github.leegphillips.mongex.dataLayer.utils;
 
-import com.github.leegphillips.mongex.dataLayer.CurrencyPair;
+import com.github.leegphillips.mongex.dataLayer.dao.CurrencyPair;
 import com.github.leegphillips.mongex.dataLayer.dao.State;
 
 import java.util.ArrayList;
