@@ -7,6 +7,7 @@ import com.github.leegphillips.mongex.dataLayer.utils.WrappedBlockingQueue;
 
 import java.io.*;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.ZipEntry;
@@ -28,6 +29,7 @@ public class TickReader extends WrappedBlockingQueue<Tick> implements Runnable {
     public TickReader(CurrencyPair pair) {
         this(pair, Arrays.stream(FILES)
                 .filter(file -> file.getName().contains(pair.getLabel()))
+                .sorted(Comparator.comparing(File::getName))
                 .collect(toList()));
     }
 
