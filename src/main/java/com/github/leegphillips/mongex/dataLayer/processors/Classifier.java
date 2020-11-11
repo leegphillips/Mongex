@@ -39,7 +39,7 @@ public class Classifier extends WrappedBlockingQueue<Classification> implements 
                 if (diff != 0) {
                     put(new Classification(diff < 0, new ArrayList<>(current.values())));
                 } else {
-                    LOG.info("Not different" + i);
+                    LOG.info("Not different " + i + " " + current.get(pair).getTimestamp());
                 }
                 LOG.info(currentValue.toPlainString() + " " + nextValue.toPlainString());
             }
