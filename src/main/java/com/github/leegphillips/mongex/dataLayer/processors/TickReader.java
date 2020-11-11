@@ -23,17 +23,21 @@ public class TickReader extends WrappedBlockingQueue<Tick> implements Runnable {
 
     private final AtomicInteger filesCompleted = new AtomicInteger(0);
     private final CurrencyPair pair;
+    private final List<File> filesForPair;
 
     public TickReader(CurrencyPair pair) {
+        this(pair, Arrays.stream(FILES)
+                .filter(file -> file.getName().contains(pair.getLabel()))
+                .collect(toList()));
+    }
+
+    TickReader(CurrencyPair pair, List<File> filesForPair) {
         this.pair = pair;
+        this.filesForPair = filesForPair;
     }
 
     @Override
     public void run() {
-        List<File> filesForPair = Arrays.stream(FILES)
-                .filter(file -> file.getName().contains(pair.getLabel()))
-                .collect(toList());
-
         for (File zip : filesForPair) {
             try {
                 ZipInputStream zis = new ZipInputStream(new FileInputStream(zip));
