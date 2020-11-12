@@ -27,14 +27,6 @@ public class StateAggregator extends WrappedBlockingQueue<List<State>> implement
                 .collect(toMap(Map.Entry::getKey, entry -> entry.getValue().take()));
 
         while (nexts.size() > 0) {
-            List<CurrencyPair> finished = nexts.entrySet().stream()
-                    .filter(entry -> entry.getValue().equals(State.END))
-                    .map(Map.Entry::getKey)
-                    .collect(toList());
-
-            finished.forEach(inputs::remove);
-            finished.forEach(nexts::remove);
-
             State first = nexts.values().stream()
                     .min(Comparator.comparing(State::getTimestamp))
                     .orElseThrow(IllegalStateException::new);
@@ -48,6 +40,15 @@ public class StateAggregator extends WrappedBlockingQueue<List<State>> implement
                     .forEach(state -> nexts.put(state.getPair(), inputs.get(state.getPair()).take()));
 
             put(same);
+
+            // moved from start to end
+            List<CurrencyPair> finished = nexts.entrySet().stream()
+                    .filter(entry -> entry.getValue().equals(State.END))
+                    .map(Map.Entry::getKey)
+                    .collect(toList());
+
+            finished.forEach(inputs::remove);
+            finished.forEach(nexts::remove);
         }
         put(CLOSE);
     }

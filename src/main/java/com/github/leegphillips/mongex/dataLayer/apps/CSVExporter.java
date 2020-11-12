@@ -139,6 +139,7 @@ public class CSVExporter implements Runnable {
             if (filesCompleted == FILES.length) {
                 SERVICE.shutdown();
                 TIMED.shutdown();
+                System.exit(0);
             }
         }
     }

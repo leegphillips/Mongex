@@ -25,15 +25,15 @@ public class Classification {
     public String toHeaders() {
         StringBuilder result = new StringBuilder();
 
-        result.append("Timestamp, ");
-        result.append("Next, ");
+        result.append("Timestamp,");
+        result.append("Next,");
 
         for (State state : states) {
             for (Integer i : state.getValues().keySet()) {
                 result.append(state.getPair().getLabel());
-                result.append(" SMA");
+                result.append("SMA");
                 result.append(i.toString());
-                result.append(", ");
+                result.append(",");
             }
         }
 
