@@ -46,6 +46,11 @@ public class CSVWriter implements Runnable {
     public void run() {
         try {
             Classification classification = input.take();
+            for (BufferedWriter writer : new BufferedWriter[]{bwTrain, bwEval}) {
+                writer.write(classification.toHeaders());
+                writer.newLine();
+            }
+
             while (classification != CLOSE) {
                 last = classification.getTimestamp().toString();
                 if (classification.getTimestamp().isBefore(CUT_OFF)) {

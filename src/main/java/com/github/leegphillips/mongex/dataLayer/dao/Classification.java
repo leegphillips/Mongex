@@ -22,6 +22,24 @@ public class Classification {
                 .findFirst().orElse(LocalDateTime.MIN);
     }
 
+    public String toHeaders() {
+        StringBuilder result = new StringBuilder();
+
+        result.append("Timestamp, ");
+        result.append("Next, ");
+
+        for (State state : states) {
+            for (Integer i : state.getValues().keySet()) {
+                result.append(state.getPair().getLabel());
+                result.append(" SMA");
+                result.append(i.toString());
+                result.append(", ");
+            }
+        }
+
+        return result.toString();
+    }
+
     public String toCSV() {
         StringBuilder result = new StringBuilder();
 
