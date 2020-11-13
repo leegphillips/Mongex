@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Map;
 
-import static com.github.leegphillips.mongex.dataLayer.utils.Constants.CLOSE;
+import static com.github.leegphillips.mongex.dataLayer.utils.Constants.END;
 
 public class Classifier extends WrappedBlockingQueue<Classification> implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(Classifier.class);
@@ -29,7 +29,7 @@ public class Classifier extends WrappedBlockingQueue<Classification> implements 
         Map<CurrencyPair, State> current = input.take();
         Map<CurrencyPair, State> next = input.take();
         int i = 0;
-        while (next != CLOSE) {
+        while (next != END) {
             BigDecimal currentValue = current.get(pair).getValues().get(1);
             if (!currentValue.equals(BigDecimal.ZERO)) {
 
