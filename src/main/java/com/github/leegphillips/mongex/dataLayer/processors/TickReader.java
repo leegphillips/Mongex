@@ -6,6 +6,7 @@ import com.github.leegphillips.mongex.dataLayer.utils.Utils;
 import com.github.leegphillips.mongex.dataLayer.utils.WrappedBlockingQueue;
 
 import java.io.*;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -26,9 +27,10 @@ public class TickReader extends WrappedBlockingQueue<Tick> implements Runnable {
     private final CurrencyPair pair;
     private final List<File> filesForPair;
 
-    public TickReader(CurrencyPair pair) {
+    public TickReader(CurrencyPair pair, LocalDate base) {
         this(pair, Arrays.stream(FILES)
                 .filter(file -> file.getName().contains(pair.getLabel()))
+                .filter(file -> !Utils.file2Date(file).isBefore(base))
                 .sorted(Comparator.comparing(File::getName))
                 .collect(toList()));
     }

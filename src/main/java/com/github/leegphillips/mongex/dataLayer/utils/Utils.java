@@ -5,6 +5,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Properties;
 import java.util.stream.Stream;
 
@@ -12,6 +14,8 @@ import static java.util.Arrays.stream;
 
 public class Utils {
     private static final Logger LOG = LoggerFactory.getLogger(Utils.class);
+
+    private static final DateTimeFormatter FILE2DATE = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     private static final Properties PROPERTIES = PropertiesSingleton.getInstance();
 
@@ -30,5 +34,11 @@ public class Utils {
 
     public static File[] getFiles() {
         return FILES;
+    }
+
+    public static LocalDate file2Date(File file) {
+        String name = file.getName();
+        LocalDate date = LocalDate.parse(name.substring(27, 33) + "01", FILE2DATE);
+        return date;
     }
 }

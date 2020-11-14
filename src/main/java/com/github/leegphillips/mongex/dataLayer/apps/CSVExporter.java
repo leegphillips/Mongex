@@ -9,7 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -40,7 +42,6 @@ public class CSVExporter implements Runnable {
     private final CurrencyPair pair;
     private final TimeFrame tf;
 
-
     public CSVExporter(CurrencyPair pair, TimeFrame tf) {
         this.pair = pair;
         this.tf = tf;
@@ -59,8 +60,14 @@ public class CSVExporter implements Runnable {
         train.delete();
         eval.delete();
 
+        LocalDate base = Utils.file2Date(Arrays.stream(FILES)
+                .filter(file -> file.getName().contains(pair.getLabel()))
+                .sorted(Comparator.comparing(File::getName))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("No file found for " + pair.getLabel())));
+
         Map<CurrencyPair, TickReader> readers = Arrays.stream(PAIRS)
-                .collect(toMap(Function.identity(), TickReader::new));
+                .collect(toMap(Function.identity(), pair -> new TickReader(pair, base)));
         readers.values().forEach(SERVICE::execute);
 
         Map<CurrencyPair, TickTimeFrameFilter> filters = readers.entrySet().stream()
