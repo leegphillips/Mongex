@@ -146,6 +146,7 @@ public class CSVExporter implements Runnable {
                     + " Full state: " + (QUEUE_SIZE - fullStateTracker.remainingCapacity())
                     + " Classifier: " + (QUEUE_SIZE - classifier.remainingCapacity()));
 
+            // TODO should only quit when queues are empty also
             if (filesRemaining == 0) {
                 SERVICE.shutdown();
                 TIMED.shutdown();
