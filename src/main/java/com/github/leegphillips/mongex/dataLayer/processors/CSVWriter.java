@@ -82,8 +82,6 @@ public class CSVWriter implements Runnable {
 
     public long getFileSize() {
         try {
-            bwTrain.flush();
-            bwEval.flush();
             return Files.size(train.toPath()) + Files.size(eval.toPath());
         } catch (IOException e) {
             LOG.error(train.getName() + " " + eval.getName(), e);

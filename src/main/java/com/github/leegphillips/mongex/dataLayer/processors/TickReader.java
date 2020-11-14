@@ -23,7 +23,7 @@ public class TickReader extends WrappedBlockingQueue<Tick> implements Runnable {
 
     private static final File[] FILES = Utils.getFiles();
 
-    private final AtomicInteger filesCompleted = new AtomicInteger(0);
+    private final AtomicInteger filesRemaining = new AtomicInteger();
     private final CurrencyPair pair;
     private final List<File> filesForPair;
 
@@ -38,6 +38,7 @@ public class TickReader extends WrappedBlockingQueue<Tick> implements Runnable {
     TickReader(CurrencyPair pair, List<File> filesForPair) {
         this.pair = pair;
         this.filesForPair = filesForPair;
+        filesRemaining.set(filesForPair.size());
     }
 
     @Override
@@ -62,7 +63,7 @@ public class TickReader extends WrappedBlockingQueue<Tick> implements Runnable {
                     line = br.readLine();
                 }
                 br.close();
-                filesCompleted.incrementAndGet();
+                filesRemaining.decrementAndGet();
             } catch (IOException e) {
                 throw new UncheckedIOException(zip.getName(), e);
             }
@@ -70,8 +71,8 @@ public class TickReader extends WrappedBlockingQueue<Tick> implements Runnable {
         put(Tick.POISON);
     }
 
-    public int getFilesCompleted() {
-        return filesCompleted.get();
+    public int getFilesRemaining() {
+        return filesRemaining.get();
     }
 }
 
