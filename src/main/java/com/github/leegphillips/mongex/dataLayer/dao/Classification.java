@@ -25,15 +25,16 @@ public class Classification {
     public String toHeaders() {
         StringBuilder result = new StringBuilder();
 
-        result.append("Timestamp,");
-        result.append("Next,");
+// remove until we can work out how to pop from data set
+//        result.append("Timestamp,");
+        result.append("Next");
 
         for (State state : states) {
             for (Integer i : state.getValues().keySet()) {
+                result.append(",");
                 result.append(state.getPair().getLabel());
                 result.append("SMA");
                 result.append(i.toString());
-                result.append(",");
             }
         }
 
@@ -43,14 +44,14 @@ public class Classification {
     public String toCSV() {
         StringBuilder result = new StringBuilder();
 
-        result.append(timestamp);
-        result.append(", ");
+// remove until we can work out how to pop from data set
+//        result.append(timestamp);
+//        result.append(", ");
         result.append(up ? "1" : "0");
-        result.append(", ");
         for (State state : states) {
             for (BigDecimal value : state.getValues().values()) {
-                result.append(value.toPlainString());
                 result.append(", ");
+                result.append(value.toPlainString());
             }
         }
         return result.toString();
