@@ -41,18 +41,20 @@ public class CSVExporter implements Runnable {
 
     private final CurrencyPair pair;
     private final TimeFrame tf;
+    private final String pairMatch;
 
-    public CSVExporter(CurrencyPair pair, TimeFrame tf) {
+    public CSVExporter(CurrencyPair pair, TimeFrame tf, String pairMatch) {
         this.pair = pair;
         this.tf = tf;
-        this.train = new File(PropertiesSingleton.getInstance().getProperty(CSV_LOCATION) + pair.getLabel() + "-" + tf.getLabel() + "-train.csv");
-        this.eval = new File(PropertiesSingleton.getInstance().getProperty(CSV_LOCATION) + pair.getLabel() + "-" + tf.getLabel() + "-eval.csv");
+        this.pairMatch = pairMatch;
+        this.train = new File(PropertiesSingleton.getInstance().getProperty(CSV_LOCATION) + pair.getLabel() + "-" + tf.getLabel() + (pairMatch == null ? "" : "-{" + pairMatch + "}") + "-train.csv");
+        this.eval = new File(PropertiesSingleton.getInstance().getProperty(CSV_LOCATION) + pair.getLabel() + "-" + tf.getLabel() + (pairMatch == null ? "" : "-{" + pairMatch + "}") + "-eval.csv");
     }
 
     public static void main(String[] args) {
         CurrencyPair pair = CurrencyPair.get(args[0]);
         TimeFrame tf = TimeFrame.get(args[1]);
-        new CSVExporter(pair, tf).run();
+        new CSVExporter(pair, tf, args.length > 2 ? args[2] : null).run();
     }
 
     @Override
@@ -67,6 +69,7 @@ public class CSVExporter implements Runnable {
                 .orElseThrow(() -> new IllegalStateException("No file found for " + pair.getLabel())));
 
         Map<CurrencyPair, TickReader> readers = Arrays.stream(PAIRS)
+                .filter(pair -> pairMatch == null ? true : pair.getLabel().contains(pairMatch))
                 .collect(toMap(Function.identity(), pair -> new TickReader(pair, base)));
         readers.values().forEach(SERVICE::execute);
 
@@ -85,7 +88,7 @@ public class CSVExporter implements Runnable {
         StateAggregator aggregator = new StateAggregator(trackers.entrySet().stream().collect(toMap(Map.Entry::getKey, Map.Entry::getValue)));
         SERVICE.execute(aggregator);
 
-        FullStateTracker fullStateTracker = new FullStateTracker(aggregator);
+        FullStateTracker fullStateTracker = new FullStateTracker(pairMatch, aggregator);
         SERVICE.execute(fullStateTracker);
 
         Classifier classifier = new Classifier(pair, fullStateTracker);
